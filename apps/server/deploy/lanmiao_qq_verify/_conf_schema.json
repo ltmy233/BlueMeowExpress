@@ -1,0 +1,32 @@
+{
+  "service_url": {
+    "type": "string",
+    "description": "蓝喵速递服务公网地址，格式 https://你的域名或IP:HTTPS端口，部署后改成你自己的",
+    "default": "https://your-server.example:443"
+  },
+  "plugin_token": {
+    "type": "string",
+    "description": "与服务端 QQ_BOT_PLUGIN_TOKEN 保持一致，用来校验插件身份，留空则插件不工作",
+    "default": ""
+  },
+  "whitelist_groups": {
+    "type": "list",
+    "description": "允许使用验证和管理命令的群号列表",
+    "default": []
+  },
+  "admin_qq_ids": {
+    "type": "list",
+    "description": "允许使用管理命令的管理员 QQ 号列表",
+    "default": []
+  },
+  "bot_id": {
+    "type": "string",
+    "description": "心跳上报使用的 Bot 标识",
+    "default": "astrbot-main"
+  },
+  "heartbeat_seconds": {
+    "type": "int",
+    "description": "心跳上报间隔（秒）",
+    "default": 30
+  }
+}

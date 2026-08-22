@@ -1,0 +1,851 @@
+?<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#f4f7fb" />
+    <title>蓝猫速递管理台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=20260821-FIX1" />
+  </head>
+  <body>
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-activity" viewBox="0 0 24 24">
+        <path d="M3 12h4l2.5-7 5 14 2.5-7h4" />
+      </symbol>
+      <symbol id="i-users" viewBox="0 0 24 24">
+        <path
+          d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+      </symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24">
+        <path d="m3 6 4 4 5-7 5 7 4-4-2 12H5L3 6ZM5 21h14" />
+      </symbol>
+      <symbol id="i-ban" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m5.6 5.6 12.8 12.8" />
+      </symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24">
+        <path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" />
+      </symbol>
+      <symbol id="i-key" viewBox="0 0 24 24">
+        <circle cx="7.5" cy="15.5" r="4.5" />
+        <path d="m11 12 9-9M15 8l3 3M17 6l2 2" />
+      </symbol>
+      <symbol id="i-megaphone" viewBox="0 0 24 24">
+        <path d="m3 11 18-7v16L3 13v-2ZM11.6 16.3 10 22H6l1.5-7" />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path
+          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
+        />
+        <path d="M14 2v6h6M8 13h8M8 17h6" />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24">
+        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M18 6 6 18" />
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <rect x="4" y="10" width="16" height="11" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path
+          d="M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3"
+        />
+      </symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24">
+        <path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" />
+      </symbol>
+    </svg>
+
+    <main>
+      <section id="login" class="login-shell" aria-labelledby="login-title">
+        <div class="login-brand">
+          <img class="brand-mark" src="cover.jpg" alt="蓝猫速递封面" />
+          <div><strong>蓝猫速递</strong><span>服务管理控制台</span></div>
+        </div>
+        <div class="login-panel">
+          <p class="kicker">SECURE ADMIN ACCESS</p>
+          <h1 id="login-title">登录管理控制台</h1>
+          <p class="login-copy">请输入登录凭据，验证成功后进入控制台。</p>
+          <form id="login-form">
+            <label for="admin-key">登录凭据</label>
+            <div class="input-action">
+              <svg><use href="#i-key" /></svg
+              ><input
+                id="admin-key"
+                type="password"
+                autocomplete="current-password"
+                required
+                placeholder="输入登录凭据"
+              />
+            </div>
+            <button type="submit">
+              登录控制台 <svg><use href="#i-arrow" /></svg>
+            </button>
+            <p id="login-error" class="error" role="alert"></p>
+          </form>
+        </div>
+      </section>
+
+      <div id="workspace" hidden>
+        <header class="dashboard-head stagger">
+          <div class="identity">
+            <img class="brand-mark" src="cover.jpg" alt="蓝猫速递封面" />
+            <div>
+              <p class="kicker">CONTROL CENTER</p>
+              <h1>蓝猫速递管理台</h1>
+            </div>
+          </div>
+          <div class="head-actions">
+            <span class="live"
+              ><i></i><span id="service-label">服务连接正常</span></span
+            ><span id="last-updated" class="muted">等待同步</span
+            ><button
+              id="refresh"
+              class="icon-button"
+              type="button"
+              title="刷新数据"
+              aria-label="刷新数据"
+            >
+              <svg><use href="#i-refresh" /></svg></button
+            ><button
+              id="lock"
+              class="icon-button danger-icon"
+              type="button"
+              title="锁定控制台"
+              aria-label="锁定控制台"
+            >
+              <svg><use href="#i-lock" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="stats stagger" aria-label="服务概览">
+          <article
+            class="stat stat-clickable service"
+            data-stat-action="health"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-activity" /></svg>
+            </div>
+            <div>
+              <span>服务健康</span><strong id="stat-health">同步中</strong
+              ><small>点击查看服务状态</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable"
+            data-stat-action="uptime"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-clock" /></svg>
+            </div>
+            <div>
+              <span>服务器运行时间</span><strong id="stat-uptime">--</strong
+              ><small>点击查看详细运行时间</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable"
+            data-stat-action="users"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-users" /></svg>
+            </div>
+            <div>
+              <span>注册用户</span><strong id="stat-users">--</strong
+              ><small>点击打开用户管理</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable online"
+            data-stat-action="online"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-activity" /></svg>
+            </div>
+            <div>
+              <span>在线用户</span><strong id="stat-online">--</strong
+              ><small>点击查看在线用户</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable"
+            data-stat-action="vip"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-crown" /></svg>
+            </div>
+            <div>
+              <span>有效 VIP</span><strong id="stat-vip">--</strong
+              ><small>点击打开 VIP 管理</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable danger-stat"
+            data-stat-action="banned"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-ban" /></svg>
+            </div>
+            <div>
+              <span>封禁人数</span><strong id="stat-banned">--</strong
+              ><small>点击查看封禁名单</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable"
+            data-stat-action="groups"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-layers" /></svg>
+            </div>
+            <div>
+              <span>群组</span><strong id="stat-groups">--</strong
+              ><small>点击查看群组数量</small>
+            </div>
+          </article>
+          <article
+            class="stat stat-clickable"
+            data-stat-action="admins"
+            tabindex="0"
+            role="button"
+          >
+            <div class="stat-icon">
+              <svg><use href="#i-shield" /></svg>
+            </div>
+            <div>
+              <span>平台管理员</span><strong id="stat-admins">--</strong
+              ><small>点击打开角色管理</small>
+            </div>
+          </article>
+        </section>
+
+        <section id="modules" class="modules stagger" aria-label="管理模块">
+          <article class="module module-users" data-scope="users:read">
+            <div class="module-head">
+              <span class="module-icon"
+                ><svg><use href="#i-users" /></svg
+              ></span>
+              <div>
+                <h2>用户管理</h2>
+                <p>通过 UUID、邮箱或显示名称定位账号</p>
+              </div>
+            </div>
+            <form id="search-form" class="search-row">
+              <div class="input-action">
+                <svg><use href="#i-search" /></svg
+                ><input
+                  id="search"
+                  type="search"
+                  placeholder="搜索用户"
+                  autocomplete="off"
+                />
+              </div>
+              <button type="submit">查询</button>
+            </form>
+            <div id="user-preview" class="compact-list">
+              <div class="skeleton"></div>
+              <div class="skeleton short"></div>
+            </div>
+            <button id="open-users" type="button" class="text-action">
+              打开用户管理 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module" data-scope="vip:issue">
+            <div class="module-head">
+              <span class="module-icon cyan"
+                ><svg><use href="#i-crown" /></svg
+              ></span>
+              <div>
+                <h2>VIP 一次性激活码</h2>
+                <p>LTSD-VIP 仅延长 VIP 权益，每码只能成功激活一次。</p>
+              </div>
+            </div>
+            <form id="vip-form" class="compact-form">
+              <label
+                >有效期 <details class="duration-picker" id="vip-duration-picker">
+                  <summary>
+                    <span id="vip-duration-label">1 天</span
+                    ><svg><use href="#i-arrow" /></svg>
+                  </summary>
+                  <div class="duration-options">
+                    <button type="button" data-duration="hour">1 小时</button
+                    ><button type="button" data-duration="day">1 天</button
+                    ><button type="button" data-duration="week">1 周</button
+                    ><button type="button" data-duration="month">1 个月</button
+                    ><button type="button" data-duration="quarter">
+                      1 季度</button
+                    ><button type="button" data-duration="year">1 年</button
+                    ><button type="button" data-duration="permanent">
+                      永久
+                    </button>
+                  </div>
+                </details>
+                <input id="vip-duration" type="hidden" value="day" /></label
+              ><label
+                >数量<input
+                  id="vip-count"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value="1" /></label
+              ><button type="submit">快速签发</button>
+            </form>
+            <div id="vip-output" class="secret-output" hidden>
+              <pre></pre>
+              <button
+                type="button"
+                class="copy-output icon-button"
+                title="复制兑换码"
+                aria-label="复制兑换码"
+              >
+                <svg><use href="#i-copy" /></svg>
+              </button>
+            </div>
+            <button id="open-vip" type="button" class="text-action">
+              打开完整签发中心 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module" data-scope="platform-admins:read">
+            <div class="module-head">
+              <span class="module-icon green"
+                ><svg><use href="#i-shield" /></svg
+              ></span>
+              <div>
+                <h2>平台管理员与晋升码</h2>
+                <p>LTSD-MOD 仅供 Root 签发，一次性晋升应用账号。</p>
+                <p><span id="admin-online-summary">同步在线状态</span></p>
+              </div>
+            </div>
+            <div id="moderator-preview" class="compact-list">
+              <div class="skeleton"></div>
+            </div>
+            <div id="moderator-code-preview" class="compact-list root-only">
+              <div class="skeleton"></div>
+            </div>
+            <button id="open-moderators" type="button" class="text-action">
+              管理角色与晋升码 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module" data-scope="announcements:write">
+            <div class="module-head">
+              <span class="module-icon coral"
+                ><svg><use href="#i-megaphone" /></svg
+              ></span>
+              <div>
+                <h2>公告发布</h2>
+                <p>向客户端发布服务通知</p>
+              </div>
+            </div>
+            <form id="announcement-form" class="stack-form">
+              <label
+                >标题<input
+                  id="announcement-title"
+                  maxlength="120"
+                  required
+                  placeholder="公告标题" /></label
+              ><label
+                >正文<textarea
+                  id="announcement-body"
+                  maxlength="5000"
+                  required
+                  placeholder="公告正文"
+                ></textarea></label
+              ><label class="force-toggle"
+                ><span><strong>强制弹窗</strong><small>发布后客户端必须点击“我已知晓”才能继续使用</small></span
+                ><span class="switch"><input id="announcement-confirm" type="checkbox" /><i></i></span></label
+              ><button type="submit">立即发布</button>
+            </form>
+            <button id="open-announcements" type="button" class="text-action">
+              查看公告记录 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module root-only">
+            <div class="module-head">
+              <span class="module-icon"
+                ><svg><use href="#i-key" /></svg
+              ></span>
+              <div>
+                <h2>面板访问密钥</h2>
+                <p>
+                  LTSD-ADM 仅含所选范围，不能获得 Root 权限或签发其他管理凭据。</p>
+              </div>
+            </div>
+            <div id="key-preview" class="compact-list">
+              <div class="skeleton"></div>
+            </div>
+            <button id="open-keys" type="button" class="text-action">
+              创建与撤销密钥 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module root-only">
+            <div class="module-head">
+              <span class="module-icon coral"
+                ><svg><use href="#i-activity" /></svg
+              ></span>
+              <div>
+                <h2>软件版本发布</h2>
+                <p>上传 APK，客户端可检查更新或强制更新</p>
+              </div>
+            </div>
+            <div id="release-preview" class="compact-list">
+              <p class="muted">加载中...</p>
+            </div>
+            <button id="open-releases" type="button" class="text-action">
+              管理版本发布 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module" data-scope="audit:read">
+            <div class="module-head">
+              <span class="module-icon cyan"
+                ><svg><use href="#i-file" /></svg
+              ></span>
+              <div>
+                <h2>审计记录</h2>
+                <p>最近的管理操作</p>
+              </div>
+            </div>
+            <div id="audit-preview" class="compact-list">
+              <div class="skeleton"></div>
+              <div class="skeleton short"></div>
+            </div>
+            <button id="open-audit" type="button" class="text-action">
+              查看完整记录 <svg><use href="#i-arrow" /></svg>
+            </button>
+          </article>
+
+          <article class="module">
+            <div class="module-head">
+              <span class="module-icon green"
+                ><svg><use href="#i-activity" /></svg
+              ></span>
+              <div>
+                <h2>QQ Bot 状态</h2>
+                <p>验证插件连接与 QQ 绑定统计</p>
+              </div>
+            </div>
+            <div id="qq-bot-status" class="qq-bot-status">
+              <div class="skeleton"></div>
+              <div class="skeleton short"></div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
+    <dialog id="users-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">USER DIRECTORY</p>
+          <h2 id="users-dialog-title">用户管理</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <form id="dialog-search-form" class="search-row">
+        <div class="input-action">
+          <svg><use href="#i-search" /></svg
+          ><input
+            id="dialog-search"
+            type="search"
+            placeholder="UUID、邮箱或显示名称"
+          />
+        </div>
+        <button type="submit">查询</button>
+      </form>
+      <div id="users" class="user-list"></div>
+    </dialog>
+
+    <dialog id="user-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">USER PROFILE</p>
+          <h2 id="user-dialog-title">用户详细信息</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div id="user-detail" class="user-detail">
+        <p class="muted">加载中...</p>
+      </div>
+    </dialog>
+
+    <dialog id="vip-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">VIP ISSUANCE CENTER</p>
+          <h2>VIP 一次性激活码签发中心</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <p class="credential-note">
+        <strong>LTSD-VIP</strong> 只改变 VIP
+        权益，不授予平台管理员或面板权限。每个代码仅可成功激活一次，每张卡都有独立 ID 可追溯。</p>
+      <form id="vip-center-form" class="vip-center-form">
+        <label
+          >时长模式
+          <details class="duration-picker" id="vip-center-duration-picker">
+            <summary>
+              <span id="vip-center-duration-label">1 天</span
+              ><svg><use href="#i-arrow" /></svg>
+            </summary>
+            <div class="duration-options">
+              <button type="button" data-duration="hour">1 小时</button
+              ><button type="button" data-duration="day">1 天</button
+              ><button type="button" data-duration="week">1 周</button
+              ><button type="button" data-duration="month">1 个月</button
+              ><button type="button" data-duration="quarter">1 季度</button
+              ><button type="button" data-duration="year">1 年</button
+              ><button type="button" data-duration="permanent">永久</button
+              ><button type="button" data-duration="custom">自定义时长</button>
+            </div>
+          </details>
+          <input id="vip-center-duration" type="hidden" value="day"
+        /></label>
+        <div id="vip-custom-fields" class="custom-duration" hidden>
+          <label
+            >自定义数值<input
+              id="vip-custom-value"
+              type="number"
+              min="1"
+              max="3153600000"
+              value="1" /></label
+          ><label
+            >单位<select id="vip-custom-unit">
+              <option value="seconds">秒</option>
+              <option value="minutes">分钟</option>
+              <option value="hours">小时</option>
+              <option value="days">天</option>
+            </select></label
+          >
+        </div>
+        <label
+          >数量<input
+            id="vip-center-count"
+            type="number"
+            min="1"
+            max="100"
+            value="1" /></label
+        ><button type="submit">签发一次性激活码</button>
+      </form>
+      <div id="vip-center-output" class="secret-output" hidden>
+        <pre></pre>
+        <div class="output-actions">
+          <button type="button" id="vip-copy-all" class="secondary-button">
+            复制全部</button
+          ><button type="button" id="vip-download" class="secondary-button">
+            下载文本
+          </button>
+        </div>
+      </div>
+      <h3>本次会话最近签发</h3>
+      <div id="vip-recent" class="detail-list">
+        <p class="muted">尚未签发</p>
+      </div>
+      <div data-scope="vip:issue">
+        <h3>卡密溯源（最近 100 张）</h3>
+        <div id="vip-trace" class="detail-list">
+          <p class="muted">加载中...</p>
+        </div>
+      </div>
+      <div data-scope="vip:revoke">
+        <h3>已开通 VIP 用户</h3>
+        <div id="vip-users" class="detail-list">
+          <p class="muted">加载中...</p>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="vip-trace-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">VIP CODE TRACE</p>
+          <h2>卡密溯源详情</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div id="vip-trace-detail" class="trace-detail">
+        <p class="muted">加载中...</p>
+      </div>
+    </dialog>
+    <dialog id="moderators-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">LTSD-MOD AUTHORIZATION</p>
+          <h2>平台管理员晋升码</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <p class="credential-note">
+        <strong>LTSD-MOD</strong>
+        仅将应用账号晋升为平台管理员，不提供面板登录。只有 Root MM
+        密钥可签发、撤销晋升码和撤销角色。</p>
+      <form id="moderator-code-form" class="inline-form root-only">
+        <label
+          >数量<input
+            id="moderator-code-count"
+            type="number"
+            min="1"
+            max="100"
+            value="1" /></label
+        ><label
+          >到期时间<input
+            id="moderator-code-expiry"
+            type="datetime-local" /></label
+        ><button type="submit">生成晋升码</button>
+      </form>
+      <div id="moderator-code-output" class="secret-output" hidden>
+        <pre></pre>
+        <button
+          type="button"
+          class="copy-output icon-button"
+          aria-label="复制晋升码"
+        >
+          <svg><use href="#i-copy" /></svg>
+        </button>
+      </div>
+      <h3>当前管理员</h3>
+      <div id="moderators" class="detail-list"></div>
+      <div class="root-only">
+        <h3>晋升码记录</h3>
+        <div id="moderator-codes" class="detail-list"></div>
+      </div>
+    </dialog>
+    <dialog id="announcements-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">ANNOUNCEMENTS</p>
+          <h2>公告记录</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div id="announcements" class="detail-list"></div>
+    </dialog>
+    <dialog id="keys-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">LTSD-ADM PANEL ACCESS</p>
+          <h2>面板访问密钥</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <p class="credential-note">
+        <strong>LTSD-ADM</strong> 只能执行选中的普通面板操作，永远不能成为
+        Root，也不能创建或撤销面板密钥、LTSD-MOD 晋升码或平台管理员角色。</p>
+      <form id="key-form" class="stack-form">
+        <label>密钥名称<input id="key-name" maxlength="80" required /></label>
+        <fieldset>
+          <legend>权限范围</legend>
+          <label
+            ><input type="checkbox" name="scope" value="users:read" />
+            查看用户</label
+          ><label
+            ><input type="checkbox" name="scope" value="vip:issue" /> 签发
+            VIP</label
+          ><label
+            ><input type="checkbox" name="scope" value="vip:revoke" /> 撤销 VIP
+            权益</label
+          ><label
+            ><input type="checkbox" name="scope" value="users:delete" />
+            远程注销账号</label
+          ><label
+            ><input type="checkbox" name="scope" value="platform-admins:read" />
+            查看平台管理员</label
+          ><label
+            ><input type="checkbox" name="scope" value="announcements:write" />
+            管理公告</label
+          ><label
+            ><input type="checkbox" name="scope" value="audit:read" />
+            查看审计</label
+          ><label
+            ><input type="checkbox" name="scope" value="keys:read" />
+            查看密钥信息</label
+          ><label><input type="checkbox" name="scope" value="groups:read" /> 查看群组</label
+          ><label><input type="checkbox" name="scope" value="groups:manage" /> 管理员强制进群</label
+          >
+        </fieldset>
+        <button type="submit">生成受限面板密钥</button>
+      </form>
+      <div id="key-output" class="secret-output" hidden>
+        <pre></pre>
+        <button
+          type="button"
+          class="copy-output icon-button"
+          aria-label="复制密钥"
+        >
+          <svg><use href="#i-copy" /></svg>
+        </button>
+      </div>
+      <div id="keys" class="detail-list"></div>
+    </dialog>
+    <dialog id="releases-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">APP RELEASES</p>
+          <h2>软件版本发布</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <p class="credential-note">
+        上传 APK 后，客户端启动时会检查最新版本；勾选“强制更新”后，旧版本客户端将无法继续使用，只能下载新版。</p>
+      <form id="release-form" class="stack-form">
+        <label
+          >版本名称<input
+            id="release-version-name"
+            maxlength="60"
+            required
+            placeholder="例如 1.2.0" /></label
+        ><label
+          >版本号（递增整数）<input
+            id="release-version-code"
+            type="number"
+            min="1"
+            step="1"
+            required
+            placeholder="例如 120" /></label
+        ><label
+          >更新说明<textarea
+            id="release-notes"
+            maxlength="2000"
+            placeholder="本次更新的内容说明"
+          ></textarea></label
+        ><label class="force-toggle"
+          ><span
+            ><strong>强制更新</strong
+            ><small>旧版本客户端将无法继续使用，必须下载新安装包</small></span
+          ><span class="switch"
+            ><input id="release-force" type="checkbox" /><i></i></span
+          ></label
+        ><label
+          >APK 文件<input
+            id="release-apk"
+            type="file"
+            accept=".apk,application/vnd.android.package-archive"
+            required
+          /></label
+        ><button type="submit">上传并发布版本</button>
+      </form>
+      <h3>已发布版本</h3>
+      <div id="releases" class="detail-list">
+        <p class="muted">加载中...</p>
+      </div>
+    </dialog>
+    <dialog id="audit-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">AUDIT TRAIL</p>
+          <h2>审计记录</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div class="audit-toolbar">
+        <label
+          >日志筛选<select id="audit-filter">
+            <option value="all">全部日志</option>
+            <option value="admin">管理凭据操作</option>
+            <option value="user">普通用户操作</option>
+          </select></label
+        ><span id="audit-count" class="muted"></span>
+        <button id="audit-delete-all" type="button" class="danger-button" hidden>
+          <svg><use href="#i-trash" /></svg>
+          清空审计日志
+        </button>
+      </div>
+      <div id="audit" class="table-wrap"></div>
+    </dialog>
+    <dialog id="overview-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">SERVER DETAIL</p>
+          <h2 id="overview-dialog-title">服务器详细信息</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div id="overview-detail" class="overview-detail"></div>
+    </dialog>
+    <dialog id="confirm-dialog" class="confirm-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="kicker">CONFIRM ACTION</p>
+          <h2 id="confirm-title">确认操作</h2>
+        </div>
+        <button class="dialog-close icon-button" aria-label="关闭">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel" type="button" class="secondary-button">取消</button>
+        <button id="confirm-submit" type="button" class="danger-button">确认删除</button>
+      </div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js?v=20260821-FIX1"></script>
+  </body>
+</html>

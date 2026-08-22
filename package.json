@@ -1,0 +1,19 @@
+{
+  "name": "lanmiao-express",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @lanmiao/client",
+    "dev:server": "npm run dev -w @lanmiao/server",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

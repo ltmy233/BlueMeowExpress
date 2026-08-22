@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 部署时把你的自签证书放到 res/raw/lanmiao_server.pem，Android 信任该证书 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/lanmiao_server" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

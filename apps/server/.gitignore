@@ -1,0 +1,9 @@
+node_modules/
+dist/
+data/
+attachments/
+.env
+*.log
+*.tar.gz
+deploy/lanmiao_qq_verify/node_modules/
+deploy/lanmiao_qq_verify/__pycache__/
