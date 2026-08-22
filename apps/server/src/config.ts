@@ -12,6 +12,8 @@ export interface Config {
   emailCodeTtlSeconds: number;
   qqBotPluginToken?: string;
   qqBindingTtlSeconds: number;
+  ipGeoKey?: string;
+  ipGeoPwd?: string;
   smtp?: {
     host: string;
     port: number;
@@ -53,6 +55,8 @@ export function loadConfig(options: { allowInsecureTestDefaults?: boolean } = {}
     emailCodeTtlSeconds: integer('EMAIL_CODE_TTL_SECONDS', 600),
     qqBotPluginToken: process.env.QQ_BOT_PLUGIN_TOKEN?.trim() || undefined,
     qqBindingTtlSeconds: integer('QQ_BINDING_TTL_SECONDS', 300),
+    ipGeoKey: process.env.IP_GEO_KEY?.trim() || undefined,
+    ipGeoPwd: process.env.IP_GEO_PWD?.trim() || undefined,
     smtp: smtpPresent
       ? {
           host: process.env.SMTP_HOST!,

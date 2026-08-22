@@ -1441,6 +1441,9 @@ export async function buildApp(config: Config, db: Database) {
         return { geo: { status: 'fail', text: 'IP 定位服务暂不可用' } };
       }
     };
+    // tool.hiofd.com IP 定位服务，需要在 .env 中配置 IP_GEO_KEY 和 IP_GEO_PWD
+    // 申请地址: https://tool.hiofd.com
+    if (!config.ipGeoKey || !config.ipGeoPwd) return { geo: { status: 'fail', text: 'IP 定位服务未配置，请设置 IP_GEO_KEY 和 IP_GEO_PWD' } };
     try {
       const seed = randomBase36(7).split('');
       for (const character of '5cs') seed.splice(Math.floor(Math.random() * seed.length), 0, character);
@@ -1458,8 +1461,8 @@ export async function buildApp(config: Config, db: Database) {
         body: JSON.stringify({
           body: { input: { ip } },
           serviceId: 'IpQuery',
-          key: 'key11',
-          pwd: 'pwd11',
+          key: config.ipGeoKey,
+          pwd: config.ipGeoPwd,
           k: key,
           t: timestamp,
           x: signature,
