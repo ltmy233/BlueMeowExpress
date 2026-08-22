@@ -1,3 +1,4 @@
+if (location.search === "?") history.replaceState(null, "", location.pathname);
 const state = {
   key: sessionStorage.getItem("lanmiao-admin-key") || "",
   session: null,

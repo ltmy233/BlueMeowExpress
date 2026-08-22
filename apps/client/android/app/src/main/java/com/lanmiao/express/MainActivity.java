@@ -60,8 +60,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void configureEdgeToEdge() {
-        // Resize the WebView for the IME. Edge-to-edge decor plus adjustResize leaves
-        // a stale bottom inset after the keyboard closes on some Xiaomi/Vivo ROMs.
+        // Keep the WebView resizable so the composer follows the software keyboard.
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         controller.setAppearanceLightStatusBars(false);

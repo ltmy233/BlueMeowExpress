@@ -1,5 +1,5 @@
 // 动态 CSS 变量注入：根据主题方案实时生成背景渐变
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect } from 'react'
 import { useBackground } from '../context/BackgroundContext'
 import { backgroundSchemes } from '../config/backgroundSchemes'
 
@@ -10,8 +10,7 @@ function currentShellTheme(): string | undefined {
   return document.querySelector<HTMLElement>('.app-shell')?.dataset.theme
 }
 
-function isDarkActive(): boolean {
-  const theme = currentShellTheme()
+function isDarkActive(theme = currentShellTheme()): boolean {
   if (theme === 'dark') return true
   if (theme === 'light') return false
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
@@ -19,45 +18,48 @@ function isDarkActive(): boolean {
 
 export default function DynamicStyles() {
   const { schemeId } = useBackground()
-  const variablesRef = useRef<Record<string, string>>({})
-
-  const variables = useMemo(() => {
-    const scheme = backgroundSchemes[schemeId] || backgroundSchemes.aurora
-    const dark = scheme.isDark || isDarkActive()
-    const text = dark
-      ? backgroundSchemes.midnight.textColors
-      : scheme.textColors
-    const neutral = dark
-      ? backgroundSchemes.midnight.neutralColors
-      : scheme.neutralColors
-    const vars: Record<string, string> = {
-      '--bg-primary': dark ? DARK_BACKGROUND : scheme.background,
-      '--color-primary': scheme.primaryColor,
-      '--color-secondary': scheme.secondaryColor,
-      '--color-accent': scheme.accentColor,
-      '--text-heading': text.heading,
-      '--text-body': text.body,
-      '--text-secondary': text.secondary,
-      '--text-muted': text.muted,
-      '--text-glass-heading': text.glassHeading,
-      '--text-glass-body': text.glassBody,
-      '--text-glass-muted': text.glassMuted,
-      '--is-dark': String(dark),
-    }
-    for (const tone of Object.keys(neutral)) {
-      vars[`--color-neutral-${tone}`] = neutral[tone]
-    }
-    return vars
-  }, [schemeId])
 
   useEffect(() => {
-    variablesRef.current = variables
+    const scheme = backgroundSchemes[schemeId] || backgroundSchemes.aurora
     const root = document.documentElement
     const apply = () => {
-      const computed = variablesRef.current
-      for (const [key, value] of Object.entries(computed)) {
+      const dark = scheme.isDark || isDarkActive()
+      const text = dark ? backgroundSchemes.midnight.textColors : scheme.textColors
+      const neutral = dark ? backgroundSchemes.midnight.neutralColors : scheme.neutralColors
+      const variables: Record<string, string> = {
+        '--bg-primary': dark ? DARK_BACKGROUND : scheme.background,
+        '--color-primary': scheme.primaryColor,
+        '--color-secondary': scheme.secondaryColor,
+        '--color-accent': scheme.accentColor,
+        '--text-heading': text.heading,
+        '--text-body': text.body,
+        '--text-secondary': text.secondary,
+        '--text-muted': text.muted,
+        '--text-glass-heading': text.glassHeading,
+        '--text-glass-body': text.glassBody,
+        '--text-glass-muted': text.glassMuted,
+        '--is-dark': String(dark),
+      }
+      for (const tone of Object.keys(neutral)) variables[`--color-neutral-${tone}`] = neutral[tone]
+      for (const [key, value] of Object.entries(variables)) {
         root.style.setProperty(key, value)
       }
+      const systemUi = (window as Window & {
+        LanMiaoSystemUi?: {
+          getSafeInsets?: () => string
+          setDarkMode: (dark: boolean) => void
+        }
+      }).LanMiaoSystemUi
+      try {
+        const insets = JSON.parse(systemUi?.getSafeInsets?.() ?? '{}') as Record<string, unknown>
+        for (const side of ['top', 'right', 'bottom', 'left']) {
+          const value = Number(insets[side])
+          if (Number.isFinite(value) && value >= 0) root.style.setProperty(`--native-safe-${side}`, `${value}px`)
+        }
+      } catch {
+        // CSS env() remains the fallback outside the native Android shell.
+      }
+      systemUi?.setDarkMode(dark)
     }
     apply()
 
@@ -78,15 +80,15 @@ export default function DynamicStyles() {
       }
     })
     bodyObserver.observe(document.body, { childList: true, subtree: true })
+    const systemTheme = window.matchMedia?.('(prefers-color-scheme: dark)')
+    systemTheme?.addEventListener?.('change', apply)
 
     return () => {
       themeObserver?.disconnect()
       bodyObserver.disconnect()
-      for (const key of Object.keys(variablesRef.current)) {
-        root.style.removeProperty(key)
-      }
+      systemTheme?.removeEventListener?.('change', apply)
     }
-  }, [variables])
+  }, [schemeId])
 
   return null
 }

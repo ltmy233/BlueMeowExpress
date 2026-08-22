@@ -8,7 +8,7 @@ import staticPlugin from '@fastify/static';
 import websocket from '@fastify/websocket';
 import nodemailer from 'nodemailer';
 import type { WebSocket } from 'ws';
-import { randomInt, randomUUID } from 'node:crypto';
+import { createHash, randomInt, randomUUID } from 'node:crypto';
 import AdmZip from 'adm-zip';
 import { createReadStream, createWriteStream, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { Transform } from 'node:stream';
@@ -1412,6 +1412,11 @@ export async function buildApp(config: Config, db: Database) {
   app.get('/api/admin/geoip', { preHandler: requireAdmin('users:read') }, async (request, reply) => {
     const ip = String((request.query as { ip?: string }).ip ?? '').trim();
     if (!/^[A-Za-z0-9.:]{7,45}$/.test(ip)) return reply.code(400).send({ error: 'Invalid IP address' });
+    const randomBase36 = (length: number) => {
+      let value = '';
+      while (value.length < length) value += Math.random().toString(36).slice(2);
+      return value.slice(0, length);
+    };
     const pconline = async (): Promise<Record<string, unknown>> => {
       try {
         const response = await fetch(`https://whois.pconline.com.cn/ipJson.jsp?ip=${encodeURIComponent(ip)}&json=true`, {
@@ -1436,6 +1441,54 @@ export async function buildApp(config: Config, db: Database) {
         return { geo: { status: 'fail', text: 'IP 定位服务暂不可用' } };
       }
     };
+    try {
+      const seed = randomBase36(7).split('');
+      for (const character of '5cs') seed.splice(Math.floor(Math.random() * seed.length), 0, character);
+      const positions = [...'5cs'].map((character) => seed.indexOf(character)).join('');
+      const key = seed.join('') + randomBase36(22);
+      const random = randomBase36(32);
+      const timestamp = `${randomInt(0, 10)}${Date.now()}${positions}135`;
+      const signature = createHash('md5')
+        .update(`${timestamp}IpQuery${timestamp}${random}${key}`, 'utf8')
+        .digest('hex') + randomBase36(8);
+      const response = await fetch(`https://toola.hiofd.com/router/rest?method=IpQuery&r=${timestamp}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(6000),
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          body: { input: { ip } },
+          serviceId: 'IpQuery',
+          key: 'key11',
+          pwd: 'pwd11',
+          k: key,
+          t: timestamp,
+          x: signature,
+          r: random,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json() as Record<string, unknown>;
+        if (Number(data.resultCode) === 0) {
+          const country = String(data.country ?? '');
+          const province = String(data.province ?? '');
+          const city = String(data.city ?? '');
+          const district = String(data.district ?? '');
+          const street = String(data.street ?? '');
+          const isp = String(data.isp ?? '');
+          const location = [country, province, city, district, street].filter(Boolean).join(' ');
+          if (location) return {
+            geo: {
+              status: 'success', text: [location, isp].filter(Boolean).join(' · '),
+              country, province, city, district, street, isp,
+              latitude: String(data.latitude ?? ''), longitude: String(data.longitude ?? ''),
+              source: 'tool.hiofd.com',
+            },
+          };
+        }
+      }
+    } catch {
+      // Continue with the existing providers when the preferred service is unavailable.
+    }
     try {
       const response = await fetch(`https://ip.zxinc.org/api.php?ip=${encodeURIComponent(ip)}`, {
         signal: AbortSignal.timeout(6000),

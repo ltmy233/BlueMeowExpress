@@ -3542,6 +3542,10 @@ function AppearancePage({ appearance, onAppearance, onBack }: { appearance: Appe
         <div className="modal-content settings-content">
           <div className="settings-list-item" onClick={() => backgroundInput.current?.click()}><span>聊天颜色与墙纸</span><small>{appearance.background ? "已自定义" : "默认"}</small></div>
           <input ref={backgroundInput} hidden type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; await onAppearance({ theme: appearance.theme, background: file, blurEnabled: appearance.blurEnabled, blurStrength: appearance.blurStrength }); }} />
+          {appearance.background && <>
+            <div className="settings-list-item"><span>背景模糊</span><Toggle label="背景模糊" checked={appearance.blurEnabled} onChange={(blurEnabled) => void onAppearance({ ...appearance, blurEnabled })} /></div>
+            <label className="range-setting">模糊程度 <span>{appearance.blurStrength}px</span><input type="range" min="0" max="24" step="1" value={appearance.blurStrength} disabled={!appearance.blurEnabled} onChange={(event) => void onAppearance({ ...appearance, blurStrength: Number(event.target.value) })} /></label>
+          </>}
           <fieldset className="theme-setting"><legend>主题</legend><div className="segmented theme-picker">{([['system','系统默认'],['light','浅色'],['dark','深色']] as const).map(([value, label]) => <button type="button" key={value} className={appearance.theme === value ? "active" : ""} onClick={() => void onAppearance({ theme: value, background: appearance.background, blurEnabled: appearance.blurEnabled, blurStrength: appearance.blurStrength })}>{label}</button>)}</div></fieldset>
           <fieldset className="theme-setting"><legend>配色方案</legend><div className="scheme-picker">{schemes.map((scheme) => <button type="button" key={scheme.id} className={scheme.id === schemeId ? "active" : ""} onClick={() => changeScheme(scheme.id)}><i style={{ background: scheme.background }} /><span><strong>{scheme.name}</strong><small>{scheme.description}</small></span></button>)}</div></fieldset>
         </div>
@@ -4007,7 +4011,7 @@ export default function App() {
   const [settingsPage, setSettingsPage] = useState<null | "group" | "contact" | "settings">(null);
   const [removeContactId, setRemoveContactId] = useState<string | null>(null);
   const [groupAction, setGroupAction] = useState<"leave" | "dissolve" | null>(null);
-  const [appearance, setAppearance] = useState<AppearanceSettings>({ theme: "system", blurEnabled: false, blurStrength: 8 });
+  const [appearance, setAppearance] = useState<AppearanceSettings>({ theme: "light", blurEnabled: false, blurStrength: 8 });
   const [preferences, setPreferences] = useState<AppPreferences>(defaultPreferences);
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [pinLocked, setPinLocked] = useState(false);

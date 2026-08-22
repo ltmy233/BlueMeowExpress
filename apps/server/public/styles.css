@@ -599,9 +599,13 @@ dialog > *:not(.dialog-head) {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  color: var(--ink);
 }
 .user-name strong {
   font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
 }
 .uuid-line {
   display: flex;
@@ -1429,8 +1433,12 @@ th {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  color: var(--ink);
 }
 .user-name strong {
+  color: #0f172a;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

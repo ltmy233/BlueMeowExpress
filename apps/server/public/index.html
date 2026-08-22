@@ -1,4 +1,4 @@
-?<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260821-FIX1" />
+    <link rel="stylesheet" href="styles.css?v=20260822-HARMONY1" />
   </head>
   <body>
     <svg class="sprite" aria-hidden="true">
@@ -95,7 +95,7 @@
           <p class="kicker">SECURE ADMIN ACCESS</p>
           <h1 id="login-title">登录管理控制台</h1>
           <p class="login-copy">请输入登录凭据，验证成功后进入控制台。</p>
-          <form id="login-form">
+          <form id="login-form" method="dialog">
             <label for="admin-key">登录凭据</label>
             <div class="input-action">
               <svg><use href="#i-key" /></svg
@@ -274,7 +274,7 @@
                 <p>通过 UUID、邮箱或显示名称定位账号</p>
               </div>
             </div>
-            <form id="search-form" class="search-row">
+            <form id="search-form" class="search-row" method="dialog">
               <div class="input-action">
                 <svg><use href="#i-search" /></svg
                 ><input
@@ -305,7 +305,7 @@
                 <p>LTSD-VIP 仅延长 VIP 权益，每码只能成功激活一次。</p>
               </div>
             </div>
-            <form id="vip-form" class="compact-form">
+            <form id="vip-form" class="compact-form" method="dialog">
               <label
                 >有效期 <details class="duration-picker" id="vip-duration-picker">
                   <summary>
@@ -383,7 +383,7 @@
                 <p>向客户端发布服务通知</p>
               </div>
             </div>
-            <form id="announcement-form" class="stack-form">
+            <form id="announcement-form" class="stack-form" method="dialog">
               <label
                 >标题<input
                   id="announcement-title"
@@ -491,7 +491,7 @@
           <svg><use href="#i-x" /></svg>
         </button>
       </div>
-      <form id="dialog-search-form" class="search-row">
+      <form id="dialog-search-form" class="search-row" method="dialog">
         <div class="input-action">
           <svg><use href="#i-search" /></svg
           ><input
@@ -533,7 +533,7 @@
       <p class="credential-note">
         <strong>LTSD-VIP</strong> 只改变 VIP
         权益，不授予平台管理员或面板权限。每个代码仅可成功激活一次，每张卡都有独立 ID 可追溯。</p>
-      <form id="vip-center-form" class="vip-center-form">
+      <form id="vip-center-form" class="vip-center-form" method="dialog">
         <label
           >时长模式
           <details class="duration-picker" id="vip-center-duration-picker">
@@ -636,7 +636,7 @@
         <strong>LTSD-MOD</strong>
         仅将应用账号晋升为平台管理员，不提供面板登录。只有 Root MM
         密钥可签发、撤销晋升码和撤销角色。</p>
-      <form id="moderator-code-form" class="inline-form root-only">
+      <form id="moderator-code-form" class="inline-form root-only" method="dialog">
         <label
           >数量<input
             id="moderator-code-count"
@@ -692,7 +692,7 @@
       <p class="credential-note">
         <strong>LTSD-ADM</strong> 只能执行选中的普通面板操作，永远不能成为
         Root，也不能创建或撤销面板密钥、LTSD-MOD 晋升码或平台管理员角色。</p>
-      <form id="key-form" class="stack-form">
+      <form id="key-form" class="stack-form" method="dialog">
         <label>密钥名称<input id="key-name" maxlength="80" required /></label>
         <fieldset>
           <legend>权限范围</legend>
@@ -750,7 +750,7 @@
       </div>
       <p class="credential-note">
         上传 APK 后，客户端启动时会检查最新版本；勾选“强制更新”后，旧版本客户端将无法继续使用，只能下载新版。</p>
-      <form id="release-form" class="stack-form">
+      <form id="release-form" class="stack-form" method="dialog">
         <label
           >版本名称<input
             id="release-version-name"
