@@ -1,113 +1,284 @@
-# 蓝喵速递（LanMiao Express）
+# 蓝喵速递（BlueMeow Express）喵~
 
-端到端加密即时通信应用：React + Capacitor Android 客户端、Fastify + SQLite 服务端，内置管理面板与 QQ 插件联动。
+自己折腾的端到端加密聊天 App 喵。Android 客户端用 React + Capacitor，服务端用 Fastify + SQLite，不用外部数据库喵。
 
-## 功能概览
+> **当前是测试版本喵**，语音通话功能还在完善中~ 理论上兼容 Android 6（API 23）及以上设备喵。
 
-- **端到端加密**：密钥在 Android 设备本地生成，私钥永不上传；每条消息按接收方公钥分别加密（ECDH-P256 / AES-256-GCM）
-- **服务端只中转不读取**：仅短期保存无法立即投递的密文队列，送达确认（ack）后即删除
-- **私聊 / 群聊 / 好友系统**：好友申请需对方同意（实时推送通知），支持拉黑、置顶、备注
-- **VIP 与平台治理**：VIP 兑换码、平台管理员晋升码、强制进群、群治理（禁言/移除/群消息墓碑）、审计日志
-- **App 在线更新**：管理面板上传 APK 发布版本，客户端检测更新，支持强制更新
-- **QQ 绑定**：163 SMTP 邮箱验证 + QQ 机器人插件联动（QQ 号绑定、VIP 发放、封禁等）
+## 能干嘛喵~
 
-## 目录结构
+- **消息端到端加密**：密钥在手机本地生成，私钥不上传，服务端只负责转发密文喵
+- **私聊 / 群聊**：好友申请、拉黑、置顶、备注都有，群聊支持多种入群模式喵
+- **语音消息**：录制、发送、气泡内直接播放喵
+- **语音通话**：一对一 WebRTC 语音通话，带呼叫/响铃/拒绝/超时状态喵
+- **消息编辑与撤回**：发出去的消息可以改、可以撤喵
+- **阅后即焚**：设置消息自动销毁时间喵
+- **VIP 系统**：卡密兑换，普通用户和 VIP 用户群组上限不同喵
+- **平台管理员**：晋升码机制，管理员可以强制进群、审核入群、禁言、发群消息墓碑喵
+- **管理面板**：网页后台管用户、发 VIP、发公告、看审计日志、上传 APK 发版喵
+- **QQ 绑定**：配合 QQ 机器人插件，在 QQ 群里绑定账号、查用户、封禁、发 VIP 喵
+- **App 内更新**：后台上传 APK，客户端检测版本，支持强制更新喵
+
+## 项目组成喵~
+
+这个项目分成三部分，互相独立喵：
+
+### 1. 服务端（apps/server/）
+
+Fastify + TypeScript + SQLite，跑在 Linux 服务器上喵。
+
+| 文件 | 干什么喵 |
+| --- | --- |
+| `src/app.ts` | 全部路由和 WebSocket（约 1800 行）喵 |
+| `src/config.ts` | 读取和校验环境变量喵 |
+| `src/db.ts` | 打开 SQLite 数据库，执行迁移喵 |
+| `src/domain.ts` | 业务规则：VIP 时长、群组限额、管理员权限喵 |
+| `src/security.ts` | 密码哈希、SHA-256、时序安全比较、随机令牌喵 |
+| `src/types.d.ts` | JWT payload 类型声明喵 |
+| `src/migrate.ts` | 独立迁移脚本，可以单独跑喵 |
+| `migrations/*.sql` | 22 个 SQL 迁移文件，启动时按文件名排序执行喵 |
+| `public/index.html` | 管理面板页面喵 |
+| `public/app.js` | 管理面板逻辑喵 |
+| `public/styles.css` | 管理面板样式喵 |
+| `test/*.test.ts` | 集成测试（47 个用例，node:test）喵 |
+| `deploy/install.sh` | 一键部署脚本喵 |
+| `deploy/lanmiao.service` | systemd 单元文件喵 |
+
+### 2. 客户端（apps/client/）
+
+React 19 + Vite + Capacitor 7，打包成 Android APK 喵。
+
+| 文件 | 干什么喵 |
+| --- | --- |
+| `src/App.tsx` | 全部界面和状态管理（约 5200 行）喵 |
+| `src/api/client.ts` | REST + WebSocket 通信封装喵 |
+| `src/lib/crypto.ts` | ECDH/AES 密钥生成和加解密喵 |
+| `src/lib/call.ts` | 语音通话状态机，callId 去重、状态流转喵 |
+| `src/lib/storage.ts` | IndexedDB 本地存储封装喵 |
+| `src/lib/session.ts` | 登录会话持久化喵 |
+| `src/lib/history.ts` | 聊天记录本地缓存喵 |
+| `src/lib/preferences.ts` | 聊天偏好：气泡颜色、墙纸、通知喵 |
+| `src/lib/attachments.ts` | 附件本地缓存喵 |
+| `src/lib/validation.ts` | 文件类型和大小校验喵 |
+| `src/styles.css` | 全部样式喵 |
+| `src/types.ts` | 客户端与服务端共享的类型定义喵 |
+| `src/main.tsx` | React 入口喵 |
+| `src/components/` | 动态样式注入、页面切换过渡喵 |
+| `src/config/` | 主题方案配置喵 |
+| `src/context/` | 背景主题上下文喵 |
+| `android/` | Capacitor 生成的 Android 工程喵 |
+| `version.json` | 版本号（versionCode / versionName）喵 |
+
+### 3. QQ 机器人插件（apps/server/deploy/lanmiao_qq_verify/）
+
+基于 **AstrBot + NapCat** 的 Python 插件喵。
+
+> AstrBot 是 QQ 机器人框架，NapCat 是 QQ 协议的非官方实现喵。两者配合可以在 QQ 群里做自动回复和管理喵。
+
+| 文件 | 干什么喵 |
+| --- | --- |
+| `main.py` | 插件主逻辑：登录绑定、管理命令、心跳上报喵 |
+| `metadata.yaml` | 插件元信息（名称、版本、依赖）喵 |
+| `_conf_schema.json` | 配置项定义（服务地址、令牌、群白名单等）喵 |
+| `README.md` | 插件使用说明喵 |
+
+**QQ 群命令：**
 
 ```
-├── apps/
-│   ├── server/            # Fastify 后端（TypeScript, node:sqlite）
-│   │   ├── src/           # app.ts 路由与 WebSocket、config.ts、db.ts、migrate.ts、domain.ts、security.ts
-│   │   ├── migrations/    # SQL 迁移（启动时按文件名顺序自动应用）
-│   │   ├── public/        # 管理面板 GUI（index.html / app.js / styles.css）
-│   │   ├── deploy/        # install.sh 安装脚本、systemd 单元、QQ 验证插件示例
-│   │   ├── test/          # node:test 集成测试（45+ 用例）
-│   │   └── dist/          # tsc 构建产物（生产运行的是这个目录）
-│   └── client/            # React 客户端（Vite + Capacitor Android）
-│       ├── src/           # App.tsx、api/client.ts（REST + WebSocket 封装）、加密、本地存储
-│       ├── android/       # Capacitor 生成的 Android 工程（gradle 构建 APK）
-│       ├── test/          # vitest 测试
-│       └── dist/          # vite 构建产物（cap sync 复制进 APK）
-├── docs/                  # 文档（API.md 在 apps/server/docs/API.md）
-├── package.json           # npm workspaces 根（apps/*）
-└── .env.example           # 根环境变量样例（仅供参考，实际配置见 apps/server/.env.example）
+/login <验证码>          绑定 QQ 并登录喵
+/st                     服务器状态喵
+/find <关键词>           查询玩家喵
+/ban <关键词>            封禁玩家喵
+/unban <关键词>          解禁玩家喵
+/vip <玩家> <时长>       发放 VIP（如：永久、7天、1月、1年）喵
+/unvip <关键词>          撤销 VIP 喵
 ```
 
-服务端管理面板在 `/admin/`（由 `apps/server/public` 提供），客户端构建产物 `apps/client/dist` 打进 Android APK，两者互相独立。
+## 本地开发喵~
 
-## 快速开始（本地开发）
-
-要求：Node.js >= 24（服务端使用内置 `node:sqlite`）。
+需要 Node.js >= 24（服务端用内置的 `node:sqlite`）喵。
 
 ```sh
-# 安装依赖（workspaces）
 npm install
 
-# 服务端开发（默认 127.0.0.1:3210）
+# 启动服务端（默认 127.0.0.1:3210）喵
 cp apps/server/.env.example apps/server/.env
 npm run dev:server
 
-# 客户端开发（vite，默认 5173）
+# 启动客户端（vite，默认 5173）喵
 npm run dev
 ```
 
 生成密钥：
 
 ```sh
-openssl rand -base64 48          # 用作 JWT_SECRET（>=32 字符）
-printf '%s' '你的root密钥' | sha256sum   # 用作 ADMIN_ROOT_KEY_HASH（只存哈希）
+openssl rand -base64 48          # JWT_SECRET 喵
+printf '%s' '你的密钥' | sha256sum   # ADMIN_ROOT_KEY_HASH 喵
 ```
 
-## 构建
+## 打包喵~
 
-| 产物 | 命令 | 说明 |
-| --- | --- | --- |
-| 服务端 `dist/` | `npm run build -w @lanmiao/server` | TypeScript 编译 |
-| 客户端 web | `npm run build -w @lanmiao/client` | vite 产物到 `apps/client/dist` |
-| Android APK | `cd apps/client && npm run build && npx cap sync android && cd android && ./gradlew assembleDebug` | APK 在 `android/app/build/outputs/apk/debug/` |
+### 服务端
 
-版本号由 `apps/client/version.json`（versionCode / versionName）驱动，Android 工程启动时读取。详见 [docs/BUILDING.md](docs/BUILDING.md)。
+```sh
+cd apps/server
+npm ci
+npm test            # 可选，跑 47 个集成测试喵
+npm run build       # 编译到 dist/ 喵
+```
 
-## 部署
+### Android APK
 
-生产环境建议 Linux（本项目已在 CentOS 验证），流程：
+```sh
+cd apps/client
+npm run build                    # tsc 检查 + vite 构建喵
+npx cap sync android             # 把 dist/ 同步到 Android 工程喵
+cd android
+./gradlew assembleDebug          # 调试包喵
+./gradlew assembleRelease        # 正式包（需要配置签名）喵
+```
+
+APK 输出在 `android/app/build/outputs/apk/` 喵。
+
+版本号在 `apps/client/version.json`，改完重新 `npm run build && npx cap sync android` 喵。
+
+### Android 镜像加速（国内环境）喵
+
+`android/build.gradle` 和 `android/settings.gradle` 已配置阿里云 Maven 镜像喵。每次 `cap sync` 后需要检查 `android/capacitor-cordova-android-plugins/build.gradle`，把 `google()` / `mavenCentral()` 替换成阿里云源喵：
+
+```gradle
+maven { url 'https://maven.aliyun.com/repository/google' }
+maven { url 'https://maven.aliyun.com/repository/central' }
+maven { url 'https://maven.aliyun.com/repository/public' }
+```
+
+## 部署喵~
+
+建议 Linux（已在 CentOS 验证），流程喵：
 
 ```sh
 cd apps/server
 npm ci && npm test && npm run build
-sudo sh deploy/install.sh "$PWD"     # 创建 lanmiao 用户、安装到 /opt/lanmiao/app
-sudoedit /opt/lanmiao/config/server.env   # 配置密钥与 SMTP
+
+# 在服务器上用 root 跑喵
+sudo sh deploy/install.sh /path/to/apps/server
+
+# 配置密钥和 SMTP 喵
+sudoedit /opt/lanmiao/config/server.env
+
+# 启动喵
 sudo systemctl enable --now lanmiao
 ```
 
-- 服务绑定 `127.0.0.1:3210`，由反向代理（nginx 等）终止 TLS 并代理 `/api`、`/ws`、`/admin`、附件
-- 数据库在 `/opt/lanmiao/data/lanmiao.sqlite`（WAL 模式），迁移在启动时自动应用，注意**迁移是单向的**
-- systemd 单元限制内存 512 MiB、单核、只读应用树，仅 `/opt/lanmiao/data` 可写
+### server.env 配置项喵
 
-详见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
+| 变量 | 说明喵 |
+| --- | --- |
+| `PORT` | 端口，默认 3210 喵 |
+| `DATABASE_PATH` | SQLite 路径喵 |
+| `JWT_SECRET` | `openssl rand -base64 48` 生成喵 |
+| `ADMIN_ROOT_KEY_HASH` | `printf '%s' '密钥' \| sha256sum` 喵 |
+| `PUBLIC_ORIGIN` | 公网 HTTPS 地址喵 |
+| `SMTP_HOST` | SMTP 服务器（如 `smtp.163.com`）喵 |
+| `SMTP_PORT` | SMTP 端口（465）喵 |
+| `SMTP_USER` | 发件邮箱喵 |
+| `SMTP_PASS` | 邮箱授权码（不是登录密码）喵 |
+| `SMTP_FROM_EMAIL` | 发件地址喵 |
+| `OFFLINE_TTL_SECONDS` | 离线密文保留时长，默认 86400 喵 |
+| `QQ_BOT_PLUGIN_TOKEN` | QQ 插件令牌（可选）喵 |
 
-## 测试
+### 反向代理喵
 
-```sh
-npm test                      # 全部（server + client）
-npm run test -w @lanmiao/server   # 服务端 node:test
-npm run test -w @lanmiao/client   # 客户端 vitest
+服务只监听 `127.0.0.1:3210`，前面放 nginx 做反向代理喵：
+
+```nginx
+map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+
+server {
+    listen 443 ssl;
+    server_name 你的域名;
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    client_max_body_size 40m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3210;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 90s;
+    }
+}
 ```
 
-## 安全模型
+`/ws` 必须支持 WebSocket 升级喵。附件上传需要调大 `client_max_body_size` 喵。
 
-- 密码 salted scrypt 存储；JWT 7 天过期，每次请求校验当前封禁状态
-- 服务端只接收密文信封，无解密密钥；离线信封 TTL 到期或送达确认后删除
-- 附件由服务端临时中转（保留期限内可下载），超过保留期限自动清理
-- Root 管理密钥只存 SHA-256 哈希；子密钥随机、分作用域、仅显示一次
-- 所有管理操作与 VIP 操作写入审计日志
+### Android 证书信任喵
 
-## 文档
+客户端默认信任系统证书喵。如果你用自签证书，需要喵：
 
-- [构建指南 docs/BUILDING.md](docs/BUILDING.md)
-- [部署指南 docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-- [API 文档 apps/server/docs/API.md](apps/server/docs/API.md)
-- [项目结构 docs/STRUCTURE.md](docs/STRUCTURE.md)
+1. 把证书放到 `apps/client/android/app/src/main/res/raw/lanmiao_server.pem` 喵
+2. 重新打包 APK 喵
 
-## 许可
+### QQ 机器人插件部署喵
 
-保留所有权利。本项目当前未选择开源许可协议，仅供个人与团队内部使用。
+1. 安装 AstrBot 和 NapCat 喵
+2. 把 `apps/server/deploy/lanmiao_qq_verify/` 整个目录放到 AstrBot 插件目录喵
+3. 在 AstrBot 管理面板配置 `service_url`、`plugin_token`、`whitelist_groups`、`admin_qq_ids` 喵
+4. 重启 AstrBot 喵
+
+### systemd 安全限制喵
+
+`deploy/lanmiao.service` 限制了喵：
+
+- 应用目录只读，只有 `/opt/lanmiao/data` 可写喵
+- 内存上限 512M，单核，最多 128 进程喵
+- 禁止提权、禁止访问 home 目录喵
+
+### 数据库备份喵
+
+```sh
+# 在线备份（服务运行时安全）喵
+sqlite3 /opt/lanmiao/data/lanmiao.sqlite ".backup /opt/lanmiao/backup/lanmiao-$(date +%Y%m%d).sqlite"
+```
+
+迁移是单向的，发新版前先在测试环境验证喵。
+
+## 测试喵~
+
+```sh
+npm test                              # 全部喵
+npm run test -w @lanmiao/server       # 服务端（47 个用例）喵
+npm run test -w @lanmiao/client       # 客户端（15 个用例）喵
+```
+
+## 安全喵~
+
+- 密码 scrypt 加盐存储，JWT 7 天过期喵
+- 服务端不解密消息，离线密文 TTL 到期或 ack 后删除喵
+- 附件临时中转，超期清理喵
+- Root 密钥只存 SHA-256 哈希，子密钥随机生成、分权限喵
+- 所有管理操作记审计日志喵
+
+## 文档喵~
+
+- [构建指南](docs/BUILDING.md)
+- [部署指南](docs/DEPLOYMENT.md)
+- [项目结构](docs/STRUCTURE.md)
+- [API 文档](apps/server/docs/API.md)
+
+## 鸣谢喵~
+
+- DeepSeek V4 pro/Flash
+- Chat GPT 5.6sol
+- Claude Fable 5
+- Mimo V2
+- Hy3
+
+## 许可喵~
+
+本项目基于 GPL-3.0 协议开源，详情见仓库 LICENSE 文件喵。
