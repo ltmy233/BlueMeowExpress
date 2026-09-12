@@ -2580,7 +2580,7 @@ select:focus {
 .app-splash{min-height:100vh;min-height:100dvh}.splash-icon{animation-duration:1.08s}.app-splash strong{animation-duration:.78s;animation-delay:.36s}.app-splash>span{animation-duration:.72s;animation-delay:.5s}
 .scheme-picker{margin:0;display:grid;gap:7px}.scheme-picker button{min-width:0;min-height:52px;padding:7px 10px;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.5);border-radius:10px;background:rgba(255,255,255,.35);text-align:left;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}.scheme-picker button.active{border-color:var(--color-primary);box-shadow:0 0 0 1px var(--color-primary),inset 0 1px 0 rgba(255,255,255,.5)}.scheme-picker button>i{flex:0 0 auto;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.55);box-shadow:0 2px 8px rgba(31,38,135,.14)}.scheme-picker button>span{min-width:0;display:grid}.scheme-picker strong{overflow:hidden;color:var(--gray-900);font-size:12px;text-overflow:ellipsis;white-space:nowrap}.scheme-picker small{overflow:hidden;margin-top:2px;color:var(--gray-500);font-size:10px;text-overflow:ellipsis;white-space:nowrap}.app-shell[data-theme='dark'] .scheme-picker button{background:rgba(17,21,27,.55);border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}@media(prefers-color-scheme:dark){.app-shell[data-theme='system'] .scheme-picker button{background:rgba(17,21,27,.55);border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}}
 
-/* Auroraqua-style animations */
+
 @keyframes fade-up-in {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2630,6 +2630,11 @@ select:focus {
   to { opacity: 0; transform: translateX(-24px); }
 }
 
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .slide-transition { flex: 1 1 auto; height: 100%; min-height: 0; overflow: hidden; position: relative; }
 .slide-transition > div { height: 100%; min-height: 0; display: flex; flex-direction: column; }
 .slide-enter { animation: slide-in-right 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -2672,8 +2677,7 @@ select:focus {
   }
 }
 
-/* 旧版 WebView（安卓 6+ 未更新 WebView，不支持 flex/grid gap）间距兜底
-   关键交互区保证间距与点击区域，功能不受影响 */
+/* 旧 WebView 不支持 gap */
 @supports not (gap: 1px) {
   .button-row > button + button,
   .quick-actions button + button,
@@ -2871,7 +2875,9 @@ select:focus {
 .pin-settings h3 { margin: 0; }
 .pin-form { display: grid; gap: 8px; }
 
-.call-overlay { position: absolute; z-index: 380; inset: 0; display: grid; place-items: center; background: rgba(7, 10, 15, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fade-in 180ms ease-out both; }
+.call-overlay { position: fixed; inset: 0; z-index: 380; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(6px); animation: fade-in 200ms ease-out both; }
+.call-overlay.ended { cursor: pointer; }
+.call-overlay.ended:active { opacity: 0.7; }
 .call-card { width: min(88%, 320px); padding: 28px 22px; display: grid; justify-items: center; gap: 10px; border-radius: 20px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28); animation: sheet-in 220ms ease-out both; }
 .call-card strong { font-size: 17px; color: var(--gray-900); }
 .call-card small { color: var(--gray-500); font-size: 12px; }

@@ -1,4 +1,4 @@
-// 蓝喵速递客户端主组件：全部页面、状态管理、设置、通话
+// 蓝喵速递客户端
 import { Component, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Browser } from "@capacitor/browser";
@@ -189,7 +189,7 @@ const errorText = (cause: unknown) => {
 const vipCardType = (seconds?: number) => seconds === undefined || seconds === -1 ? "永久卡" : seconds < 86400 ? "临时卡" : `${Math.floor(seconds / 86400)} 天卡`;
 
 async function copyText(value: string) {
-  try { await navigator.clipboard.writeText(value); return; } catch { /* Use the legacy WebView fallback. */ }
+    try { await navigator.clipboard.writeText(value); return; } catch { /* 旧 WebView 兼容 */ }
   const input = document.createElement("textarea");
   input.value = value;
   input.style.position = "fixed";
@@ -354,6 +354,7 @@ function MigrationModal({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   useEffect(() => {
     if (!cooldown) return;
     const timer = window.setInterval(
@@ -479,6 +480,7 @@ function AuthScreen({
   const [cooldown, setCooldown] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [forgot, setForgot] = useState(false);
   const [forgotCooldown, setForgotCooldown] = useState(0);
   const [forgotSent, setForgotSent] = useState(false);
@@ -664,7 +666,7 @@ function AuthScreen({
                     </label>
                     <label>新密码<input type="password" autoComplete="new-password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} placeholder="至少 10 位" /></label>
                     <label>确认新密码<input type="password" autoComplete="new-password" value={resetPasswordConfirm} onChange={(e) => setResetPasswordConfirm(e.target.value)} placeholder="再次输入新密码" /></label>
-                    {error && <p className="form-error">{error}</p>}
+              {saveMessage && <p className="form-success">{saveMessage}</p>}
                     <button
                       className="primary-button"
                       disabled={
@@ -1014,13 +1016,16 @@ function MessagesScreen({
   conversations,
   open,
   onGroup,
+  onJoinGroup,
 }: {
   conversations: Conversation[];
   open: (id: string) => void;
   onGroup: () => void;
+  onJoinGroup: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"direct" | "group">("direct");
+  
   const filtered = conversations
     .filter((item) => (kind === "group" ? item.group : !item.group))
     .filter((item) => item.name.includes(query) || item.preview.includes(query))
@@ -1049,6 +1054,7 @@ function MessagesScreen({
         <div className="conversation-tabs" role="tablist" aria-label="会话分类">
           <button className={kind === "direct" ? "active" : ""} onClick={() => setKind("direct")}>个人</button>
           <button className={kind === "group" ? "active" : ""} onClick={() => setKind("group")}>群聊</button>
+          
         </div>
         {filtered.length === 0 ? (
           <EmptyState>
@@ -1085,6 +1091,7 @@ function MessagesScreen({
           </div>
         )}
       </div>
+      
     </>
   );
 }
@@ -1121,7 +1128,7 @@ function ChatScreen({
   onMute,
   onDisappear,
   onCall,
-  callLog,
+  onClearHistory,
   displayName,
   typingNames,
   onTyping,
@@ -1143,7 +1150,7 @@ function ChatScreen({
   onMute: (conversationId: string, mutedUntil: number | null) => Promise<void>;
   onDisappear: (conversationId: string, seconds: number) => Promise<void>;
   onCall: (peerId: string) => void;
-  callLog: { callId: string; peerId: string; duration: number; result: CallResult; message: string } | null;
+  onClearHistory: () => void;
   displayName?: string;
   typingNames: string[];
   onTyping?: () => void;
@@ -1158,6 +1165,7 @@ function ChatScreen({
   const [editDraft, setEditDraft] = useState("");
   const [reactOpen, setReactOpen] = useState(false);
   const [prefOpen, setPrefOpen] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
   const [mutedLocal, setMutedLocal] = useState(Boolean(conversation.muted));
   const [disappearLocal, setDisappearLocal] = useState(conversation.disappearingSeconds ?? 0);
   const [recording, setRecording] = useState(false);
@@ -1303,7 +1311,20 @@ function ChatScreen({
             onChange={(v) => { const seconds = Number(v); setDisappearLocal(seconds); void onDisappear(conversation.id, seconds); }}
           />
           <p className="setting-note"><Info /><span>开启后，会话中的新消息将在设定时间后自动销毁</span></p>
-          <div className="button-row"><button className="outline-button" onClick={() => setPrefOpen(false)}>完成</button></div>
+          <div className="button-row">
+            <button className="outline-button" style={{ color: "#ef4444" }} onClick={() => { setPrefOpen(false); setClearConfirm(true); }}>删除本地聊天记录</button>
+            <button className="outline-button" onClick={() => setPrefOpen(false)}>完成</button>
+          </div>
+        </div>
+      </div>}
+      {clearConfirm && <div className="modal-backdrop" onClick={() => setClearConfirm(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <h3>确认删除</h3>
+          <p style={{ fontSize: 14, color: "var(--gray-600)", margin: "8px 0 16px" }}>确定要删除本地聊天记录吗？此操作仅删除本机记录，不会影响对方。</p>
+          <div className="button-row">
+            <button className="outline-button" onClick={() => setClearConfirm(false)}>取消</button>
+            <button className="danger-button" onClick={() => { setClearConfirm(false); onClearHistory(); }}>确认删除</button>
+          </div>
         </div>
       </div>}
       <div className="message-stream" ref={messageStreamRef} style={{ position: "relative", backgroundImage: conversationPreferences.wallpaper ? `url(${conversationPreferences.wallpaper})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
@@ -1319,26 +1340,61 @@ function ChatScreen({
         ) : (
           messageList.map((message) => {
             if (message.body.startsWith("__call__:")) {
-              const [, result = "completed", durationText = "0", ...labelParts] = message.body.split(":");
-              const duration = Number(durationText) || 0;
-              const label = labelParts.join(":") || (result === "completed" ? "通话结束" : "通话未完成");
-              return <div className="call-log-message" key={message.id}><Phone size={14} /><span>{result === "completed" ? <>通话结束 · {Math.floor(duration / 60).toString().padStart(2, "0")}:{(duration % 60).toString().padStart(2, "0")}</> : <strong>{label}</strong>}</span></div>;
-            }
+              const parts = message.body.split(":");
+              const result = parts[1] || "completed";
+              const duration = Number(parts[2]) || 0;
+              const customMsg = parts.slice(3).join(":");
+              const mm = Math.floor(duration / 60).toString().padStart(2, "0");
+              const ss = (duration % 60).toString().padStart(2, "0");
+              const peerName = conversation.name;
+              let callLabel: string;
+              if (result === "completed") {
+                callLabel = `与${peerName ? peerName + " " : ""}通话 ${mm}:${ss}`;
+              } else if (result === "rejected") {
+                callLabel = "对方拒绝了通话";
+              } else if (result === "missed") {
+                callLabel = "未接通话";
+              } else if (result === "cancelled") {
+                callLabel = "通话已取消";
+              } else if (result === "failed") {
+                callLabel = "通话失败";
+              } else {
+                callLabel = customMsg || "通话结束";
+              }
+              return (
+                <div className="message-line message-in call-message" key={message.id}>
+                  <div className="message-wrap" style={{ width: "auto" }}>
+                    <div className="bubble">
+                      <Phone size={14} style={{ flexShrink: 0 }} />
+                      <span>{callLabel}</span>
+                      <small>{messageTime(message.sentAt)}</small>
+                    </div>
+                  </div>
+    </div>
+  );
+}
             const member = memberList.find((item) => item.id === message.senderId);
             const senderName = member?.name || message.senderName;
+            const isSystemNotification = message.governance && !message.senderId;
             return (
             <div
-              className={`message-line message-in ${message.senderId === profile.id ? "mine" : ""} ${message.governance ? "governance-message" : ""}`}
+              className={`message-line message-in ${isSystemNotification ? "governance-message" : message.senderId === profile.id ? "mine" : ""} ${message.governance ? "governance-message" : ""}`}
               key={message.id}
               onContextMenu={(event) => { event.preventDefault(); if (!message.recalled) setSelected(message); }}
               onPointerDown={() => { if (!message.recalled) pressTimer.current = setTimeout(() => setSelected(message), 550); }}
               onPointerUp={() => { if (pressTimer.current) clearTimeout(pressTimer.current); }}
               onPointerCancel={() => { if (pressTimer.current) clearTimeout(pressTimer.current); }}
             >
-              {message.senderId !== profile.id && (
+              {!isSystemNotification && message.senderId !== profile.id && (
                 <Avatar name={senderName} image={member?.avatar} size="small" />
               )}
-              <div className="message-wrap">
+                <div className="message-wrap">
+                {isSystemNotification ? (
+                  <div className="bubble" style={{ background: "var(--coral-soft)", borderColor: "var(--coral-soft)", textAlign: "center", width: "100%" }}>
+                    <span style={{ color: "var(--gray-500)", fontSize: 12 }}>{message.body}</span>
+                    <small style={{ display: "block", color: "var(--gray-400)", fontSize: 11 }}>{messageTime(message.sentAt)}</small>
+                  </div>
+                ) : (<>
                 <span className={`sender-label ${message.senderId === profile.id ? 'own' : ''}`}>
                     {member?.memberTitle && <b className="group-title-badge">{member.memberTitle}</b>}
                     {member?.memberLevel != null && member.memberLevel > 0 && <b className="group-level-badge">LV{member.memberLevel}</b>}
@@ -1373,22 +1429,16 @@ function ChatScreen({
                     ))}
                   </div>
                 )}
+                </>)}
               </div>
-              {message.senderId === profile.id && (
+              {!isSystemNotification && message.senderId === profile.id && (
                 <Avatar name={profile.name} image={profile.avatar} size="small" />
               )}
             </div>
             );
           })
         )}
-        {callLog && callLog.peerId === conversation.id && (
-          <div className="call-log-message">
-            <Phone size={14} />
-            <span>
-              {callLog.result === "completed" ? <>通话结束 · {Math.floor(callLog.duration / 60).toString().padStart(2, "0")}:{(callLog.duration % 60).toString().padStart(2, "0")}</> : <strong style={{ color: "#ef4444" }}>{callLog.message}</strong>}
-            </span>
-          </div>
-        )}
+
       </div>
       {error && <p className="composer-error">{error}</p>}
       {preferences.typingIndicators && typingNames.length > 0 && <div className="typing-indicator">{typingNames.join("、")} 正在输入<span className="typing-dots"><i /><i /><i /></span></div>}
@@ -1995,6 +2045,7 @@ function ProfileScreen({
             <ChevronRight />
           </button>
         </section>
+        <p style={{ textAlign: "center", padding: "16px 0", color: "var(--gray-400)", fontSize: 11 }}>蓝喵速递 v1.1.56 · build {Date.now()}</p>
       </div>
     </>
   );
@@ -2271,6 +2322,7 @@ function ContactSettingsPage({
   onSaved,
   onPreferences,
   onRemove,
+  onClearHistory,
   appearance,
   onAppearance,
 }: {
@@ -2280,6 +2332,7 @@ function ContactSettingsPage({
   onSaved: (remark: string) => void;
   onPreferences: (preferences: { pinned?: boolean; blocked?: boolean }) => Promise<void>;
   onRemove: () => void;
+  onClearHistory: () => void;
   appearance: ConversationAppearance;
   onAppearance: (value: ConversationAppearance) => void;
 }) {
@@ -2338,6 +2391,7 @@ function ContactSettingsPage({
         </div>
         <div className="settings-list" style={{ marginTop: 16 }}>
           <div className="settings-list-item danger-text" onClick={() => void onPreferences({ blocked: !contact.blocked })}><span>{contact.blocked ? "解除拉黑" : "拉黑"}</span></div>
+          <div className="settings-list-item danger-text" onClick={onClearHistory}><span>清除聊天记录</span></div>
           <div className="settings-list-item danger-text" onClick={onRemove}><span>删除好友</span></div>
         </div>
         {error && <p className="form-error">{error}</p>}
@@ -2551,6 +2605,7 @@ function JoinGroupModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<"joined" | "pending" | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const lookup = async () => {
     setBusy(true);
     setError("");
@@ -2670,6 +2725,7 @@ function GroupSettingsPage({
   onMembersChanged,
   onLeave,
   onDissolve,
+  onClearHistory,
   ownId,
   appearance,
   onAppearance,
@@ -2682,6 +2738,7 @@ function GroupSettingsPage({
   onMembersChanged: (members: Conversation["members"]) => void;
   onLeave: () => void;
   onDissolve: () => void;
+  onClearHistory: () => void;
   ownId: string;
   appearance: ConversationAppearance;
   onAppearance: (value: ConversationAppearance) => void;
@@ -2692,9 +2749,13 @@ function GroupSettingsPage({
   const [name, setName] = useState(conversation.name);
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState(conversation.members);
+  useEffect(() => { setMembers(conversation.members); }, [conversation.members]);
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingLevel, setEditingLevel] = useState(1);
+  useEffect(() => { if (editingMemberId) { const m = members.find((item) => item.id === editingMemberId); if (m) { setEditingTitle(m.memberTitle ?? ""); setEditingLevel(m.memberLevel ?? 1); } } }, [editingMemberId, members]);
   const [muteTargetId, setMuteTargetId] = useState<string | null>(null);
   const [muteMinutes, setMuteMinutes] = useState("10");
   const [rejectTarget, setRejectTarget] = useState<JoinRequest | null>(null);
@@ -2702,6 +2763,7 @@ function GroupSettingsPage({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [subPage, setSubPage] = useState<string | null>(null);
   const [customSeconds, setCustomSeconds] = useState("");
   const [selectedSeconds, setSelectedSeconds] = useState(conversation.disappearingSeconds ?? 0);
@@ -2764,7 +2826,7 @@ function GroupSettingsPage({
       type="button"
       className={`member-avatar-tile ${editingMemberId === member.id ? "active" : ""}`}
       key={member.id}
-      onClick={() => setEditingMemberId((id) => (id === member.id ? null : member.id))}
+      onClick={() => setEditingMemberId((id) => id === member.id ? null : member.id)}
       aria-label={`${member.name}${member.memberTitle ? `，${member.memberTitle}` : ""}`}
       title={member.name}
     >
@@ -2785,6 +2847,7 @@ function GroupSettingsPage({
           </div>
           <h2>{conversation.name}</h2>
           <small style={{ color: "var(--gray-500)" }}>{conversation.description || "添加群组描述..."}</small>
+          {conversation.groupNumber && <small style={{ color: "var(--gray-400)", fontSize: 12 }}>群号: {conversation.groupNumber}</small>}
         </div>
         <div className="signal-action-row">
           <button className="signal-action-btn" onClick={() => setSubPage("disappearing")}><Sparkles /><span>动态</span></button>
@@ -2802,25 +2865,33 @@ function GroupSettingsPage({
           {admins.map(renderMemberRow)}
           {regulars.map(renderMemberRow)}
         </div>
-        {canManage && <div className="settings-list">
+        <div className="settings-list">
           <div className="settings-list-item" onClick={() => setSubPage("title")}><span>成员标签</span><ChevronRight /></div>
-          <div className="settings-list-item" onClick={() => setSubPage("requests")}><span>请求与邀请</span><small>{requests.length > 0 ? requests.length : ""}</small><ChevronRight /></div>
-        </div>}
-        {inviteOpen && canManage && <div className="compact-panel"><h3>邀请好友</h3>{inviteCandidates.length === 0 && <p className="empty-inline">没有可邀请的好友</p>}<div className="invite-friends compact-list">{inviteCandidates.map((contact) => <div className="member-row" key={contact.id}><Avatar name={contact.name} image={contact.avatar} size="small" /><span><strong>{contact.remark || contact.name}</strong></span><button className="outline-button" disabled={invitingId === contact.id} onClick={async () => { setInvitingId(contact.id); try { await api.addGroupMember(conversation.id, contact.id); setMembers((all) => { const next = [...all, { ...contact, groupRole: "member" as const, forced: false, memberLevel: 1 }]; onMembersChanged(next); return next; }); } catch (cause) { setError(errorText(cause)); } finally { setInvitingId(null); } }}>邀请</button></div>)}</div></div>}
-        {canManage && editingMemberId && editingMember && editingMember.groupRole !== "owner" && (
+          {canManage && <div className="settings-list-item" onClick={() => setSubPage("requests")}><span>请求与邀请</span><small>{requests.length > 0 ? requests.length : ""}</small><ChevronRight /></div>}
+        </div>
+        {(editingMemberId && editingMember) && (canManage || editingMember.id === ownId) && (
           <div className="compact-panel member-editor">
-            <div className="member-row"><Avatar name={editingMember.name} image={editingMember.avatar} size="small" /><span><strong>{editingMember.name}</strong><small>成员管理</small></span><IconButton label="关闭" onClick={() => setEditingMemberId(null)}><X /></IconButton></div>
-            <div className="member-governance">
+            <div className="member-row"><Avatar name={editingMember.name} image={editingMember.avatar} size="small" /><span><strong>{editingMember.name}</strong><small>{editingMember.id === ownId ? "编辑我的标签" : "成员管理"}</small></span><IconButton label="关闭" onClick={() => setEditingMemberId(null)}><X /></IconButton></div>
+            {canManage && editingMember.id !== ownId && <div className="member-governance">
               {isOwner && <button className="outline-button" onClick={async () => { try { const next: "member" | "moderator" = editingMember.groupRole === "administrator" ? "member" : "moderator"; await api.setGroupMemberRole(conversation.id, editingMember.id, next); setMembers((all) => all.map((item) => item.id === editingMember.id ? { ...item, groupRole: next === "moderator" ? "administrator" : "member" } : item)); setEditingMemberId(null); } catch (cause) { setError(errorText(cause)); } }}>{editingMember.groupRole === "administrator" ? "撤销管理员" : "设为管理员"}</button>}
               {editingMember.moderation?.mutedUntil && new Date(editingMember.moderation.mutedUntil).getTime() > Date.now() ? (
                 <button className="outline-button" onClick={async () => { try { await api.unmuteGroupMember(conversation.id, editingMember.id); setMembers((all) => all.map((item) => item.id === editingMember.id ? { ...item, moderation: { ...item.moderation, mutedUntil: undefined } } : item)); } catch (cause) { setError(errorText(cause)); } }}>解除禁言</button>
               ) : <button className="outline-button" onClick={() => setMuteTargetId(editingMember.id)}>禁言</button>}
               {isOwner && <button className="danger-button" onClick={async () => { try { await api.removeGroupMember(conversation.id, editingMember.id); setMembers((all) => { const next = all.filter((item) => item.id !== editingMember.id); onMembersChanged(next); return next; }); setEditingMemberId(null); } catch (cause) { setError(errorText(cause)); } }}>移出群聊</button>}
-            </div>
-            <div className="member-edit-fields"><input aria-label="头衔" maxLength={20} defaultValue={editingMember.memberTitle ?? ""} placeholder="头衔" data-member-title={editingMember.id} /><input aria-label="等级" type="number" min={1} max={100} defaultValue={editingMember.memberLevel ?? 1} data-member-level={editingMember.id} /><button className="outline-button" onClick={async () => { try { const title = (document.querySelector(`[data-member-title="${editingMember.id}"]`) as HTMLInputElement)?.value ?? ""; const level = Number((document.querySelector(`[data-member-level="${editingMember.id}"]`) as HTMLInputElement)?.value ?? 1); await api.updateGroupMemberProfile(conversation.id, editingMember.id, title, level); setMembers((all) => all.map((item) => item.id === editingMember.id ? { ...item, memberTitle: title, memberLevel: level } : item)); } catch (cause) { setError(errorText(cause)); } }}>保存</button></div>
+            </div>}
+             <div className="member-edit-fields"><input aria-label="头衔" maxLength={20} value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} placeholder="头衔" /><input aria-label="等级" type="number" min={1} max={100} value={editingLevel} onChange={(e) => setEditingLevel(Number(e.target.value) || 1)} />            <button className="outline-button" onClick={async () => { try {
+                 await api.updateGroupMemberProfile(conversation.id, editingMember.id, editingTitle, editingLevel);
+                 const nextMembers = members.map((item) => item.id === editingMember.id ? { ...item, memberTitle: editingTitle, memberLevel: editingLevel } : item);
+                 setMembers(nextMembers);
+                 onMembersChanged(nextMembers);
+                 setSaveMessage('保存成功');
+                 setTimeout(() => setSaveMessage(''), 2000);
+               } catch (cause) { setError(errorText(cause)); } }}>保存</button></div>
           </div>
         )}
+        {saveMessage && <p className="form-success" style={{ padding: "4px 16px", margin: 0 }}>{saveMessage}</p>}
         <div className="settings-list" style={{ marginTop: 16 }}>
+          <div className="settings-list-item danger-text" onClick={onClearHistory}><span>清除聊天记录</span></div>
           <div className="settings-list-item danger-text" onClick={onLeave}><span>离开群组</span></div>
           {isOwner && <div className="settings-list-item danger-text" onClick={onDissolve}><span>解散群组</span></div>}
         </div>
@@ -3992,6 +4063,27 @@ function OverageModal({
   );
 }
 
+class RootErrorBoundary extends Component<{ children: ReactNode }, { error: string }> {
+  state = { error: "" };
+  static getDerivedStateFromError(error: unknown) {
+    return { error: error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error) };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("RootErrorBoundary caught:", error);
+  }
+  render() {
+    if (this.state.error)
+      return (
+        <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 99999, padding: 20, overflow: "auto", fontFamily: "monospace" }}>
+          <h2 style={{ color: "red" }}>应用崩溃</h2>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: 12 }}>{this.state.error}</pre>
+          <button onClick={() => location.reload()} style={{ marginTop: 12, padding: "8px 16px" }}>重新加载</button>
+        </div>
+      );
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -4018,8 +4110,24 @@ export default function App() {
   const [pinError, setPinError] = useState("");
   const [callState, setCallState] = useState<CallState>({ status: "idle" });
   const [callElapsed, setCallElapsed] = useState(0);
-  const [callLog, setCallLog] = useState<{ callId: string; peerId: string; duration: number; result: CallResult; message: string } | null>(null);
   const recordedCallsRef = useRef(new Set<string>());
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  useEffect(() => {
+    const prevHandler = window.onerror;
+    const prevRejection = (event: PromiseRejectionEvent) => {};
+    window.onerror = (msg, src, line, col, err) => {
+      const detail = err ? `${err.message}\n${err.stack ?? ""}` : `${msg}\n${src}:${line}:${col}`;
+      setGlobalError(detail);
+      return true;
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const detail = reason instanceof Error ? `${reason.message}\n${reason.stack ?? ""}` : String(reason);
+      setGlobalError(detail);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => { window.onerror = prevHandler; window.removeEventListener("unhandledrejection", onRejection); };
+  }, []);
   useEffect(() => {
     if (!profile?.id) return;
     void loadPreferences(profile.id).then(setPreferences).catch(() => setPreferences(defaultPreferences));
@@ -4032,19 +4140,28 @@ export default function App() {
     });
   };
   useEffect(() => {
-    if (callState.status !== "active") { setCallElapsed(0); return; }
-    const update = () => setCallElapsed(Math.max(0, Math.floor((Date.now() - callState.startedAt) / 1000)));
-    update();
-    const timer = window.setInterval(update, 1000);
-    return () => window.clearInterval(timer);
+    try {
+      if (callState.status !== "active") { setCallElapsed(0); return; }
+      const update = () => setCallElapsed(Math.max(0, Math.floor((Date.now() - (callState.startedAt || Date.now())) / 1000)));
+      update();
+      const timer = window.setInterval(update, 1000);
+      return () => window.clearInterval(timer);
+    } catch { setCallElapsed(0); }
   }, [callState]);
   useEffect(() => {
-    if (callState.status !== "ended" || recordedCallsRef.current.has(callState.callId)) return;
-    recordedCallsRef.current.add(callState.callId);
-    setCallLog({ callId: callState.callId, peerId: `d-${callState.peerId}`, duration: callState.duration, result: callState.result, message: callState.message });
-    const message: ChatMessage = { id: `call-${callState.callId}`, conversationId: `d-${callState.peerId}`, senderId: profile?.id ?? "", senderName: profile?.name ?? "", body: `__call__:${callState.result}:${callState.duration}:${callState.message}`, sentAt: new Date().toISOString(), status: "delivered" };
-    void appendHistory(message.conversationId, message);
-    window.setTimeout(() => setCallState({ status: "idle" }), 1400);
+    try {
+      if (callState.status !== "ended" || recordedCallsRef.current.has(callState.callId)) return;
+      recordedCallsRef.current.add(callState.callId);
+      const callId = callState.callId || "unknown";
+      const peerId = callState.peerId || "unknown";
+      const result = callState.result || "completed";
+      const duration = typeof callState.duration === "number" ? callState.duration : 0;
+      const message = callState.message || "通话结束";
+      const sentAt = new Date(Date.now() - duration * 1000).toISOString();
+      const chatMessage: ChatMessage = { id: `call-${callId}`, conversationId: `d-${peerId}`, senderId: profile?.id ?? "", senderName: profile?.name ?? "", body: `__call__:${result}:${duration}:${message}`, sentAt, status: "delivered" };
+      void appendHistory(chatMessage.conversationId, chatMessage).catch(() => {});
+    } catch { /* ignore */ }
+    window.setTimeout(() => { try { setCallState({ status: "idle" }); } catch { /* ignore */ } }, 1400);
   }, [callState, profile?.id, profile?.name]);
   const [incomingCaller, setIncomingCaller] = useState<string | null>(null);
   const callManagerRef = useRef<VoiceCallManager | null>(null);
@@ -4241,25 +4358,24 @@ export default function App() {
   useEffect(() => {
     void (async () => {
       try {
-        const latest = await api.checkLatestRelease();
+        const [latest, stored] = await Promise.all([api.checkLatestRelease(), loadSession()]);
         if (latest?.forceUpdate && latest.versionCode > APP_VERSION_CODE) {
           setRelease(latest);
           setBooting(false);
           return;
         }
-        const stored = await loadSession();
         if (stored) {
           api.setToken(stored.accessToken);
-          const user = await api.me();
+          const [user, disclaimer] = await Promise.all([api.me(), api.getDisclaimer()]);
           const next = { ...stored, user };
           await saveSession(next);
           setSession(next);
           setProfile(user);
-          setDisclaimer(await api.getDisclaimer());
+          setDisclaimer(disclaimer);
           if (await getPinHash()) setPinLocked(true);
         }
       } catch (cause) {
-        try { await performLogout(); } catch { /* Continue to the retry screen. */ }
+        try { await performLogout(); } catch { /* 跳到重试页 */ }
         setLoadError(errorText(cause));
       } finally {
         setBooting(false);
@@ -4292,33 +4408,36 @@ export default function App() {
   useEffect(() => {
     if (!session || !profile || !disclaimer?.accepted) return;
     let cancelled = false;
-    Promise.all([
-      api.listConversations(),
-      api.listContacts(),
-      api.listAnnouncements(),
-    ])
-        .then(async ([nextConversations, nextContacts, nextAnnouncements]) => {
-          if (!cancelled) {
-            const unread = await loadUnread(profile.id);
-            const hydrated = await Promise.all(nextConversations.map(async (item) => {
-              const history = await loadHistory(item.id).catch(() => []);
-              const latest = history.filter((message) => !message.recalled).at(-1);
-              return {
-                ...item,
-                unread: unread[item.id] ?? 0,
-                ...(latest ? {
-                  preview: latest.attachment ? (latest.attachment.mime.startsWith("image/") ? "[图片]" : latest.attachment.mime.startsWith("audio/") ? "[语音]" : "[视频]") : latest.body,
-                  updatedAt: latest.sentAt,
-                } : {}),
-              };
-            }));
-            setConversations(hydrated);
-          setContacts(nextContacts);
-          setAnnouncements(nextAnnouncements.announcements);
-          void refreshStatuses();
-        }
-      })
-      .catch((cause) => setLoadError(errorText(cause)));
+    api.listContacts().then((nextContacts) => {
+      if (!cancelled) setContacts(nextContacts);
+    }).catch((cause) => {
+      if (!cancelled) setLoadError(errorText(cause));
+    });
+    api.listAnnouncements().then((nextAnnouncements) => {
+      if (!cancelled) setAnnouncements(nextAnnouncements.announcements);
+    }).catch(() => {});
+    api.listConversations().then(async (nextConversations) => {
+      if (cancelled) return;
+      const unread = await loadUnread(profile.id).catch(() => ({}));
+      const hydrated = await Promise.all(nextConversations.map(async (item) => {
+        const history = await loadHistory(item.id).catch(() => []);
+        const latest = history.filter((message) => !message.recalled).at(-1);
+        return {
+          ...item,
+          unread: unread[item.id] ?? 0,
+          ...(latest ? {
+            preview: latest.attachment ? (latest.attachment.mime.startsWith("image/") ? "[图片]" : latest.attachment.mime.startsWith("audio/") ? "[语音]" : "[视频]") : latest.body,
+            updatedAt: latest.sentAt,
+          } : {}),
+        };
+      }));
+      if (!cancelled) {
+        setConversations(hydrated);
+        void refreshStatuses();
+      }
+    }).catch((cause) => {
+      if (!cancelled) setLoadError(errorText(cause));
+    });
     api
       .getVipOverage()
       .then(setOverage)
@@ -4379,7 +4498,7 @@ export default function App() {
             if (stored.localUrl) URL.revokeObjectURL(stored.localUrl);
           }
         } catch {
-          // Keep the encrypted message; the media bubble retries when opened.
+          // 加密消息保留，媒体气泡在打开时重试
         }
       }
       await appendHistory(event.conversationId, message);
@@ -4433,6 +4552,15 @@ export default function App() {
             ? { ...item, body: "此消息已由群组治理移除", governance: true }
             : item,
         ),
+      }));
+    }
+    if (event.type === "system-notification") {
+      const id = `g-${event.groupId}`;
+      const systemMessage: ChatMessage = { id: event.id, conversationId: id, senderId: "", senderName: "", body: event.body, sentAt: new Date(event.createdAt).toISOString(), status: "delivered", governance: true };
+      await appendHistory(id, systemMessage);
+      setMessages((all) => ({
+        ...all,
+        [id]: [...(all[id] ?? []).filter((item) => item.id !== event.id), systemMessage],
       }));
     }
     if (event.type === "message-recalled") {
@@ -4543,6 +4671,12 @@ export default function App() {
       setLoadError(errorText(cause));
     } finally {
       setMessagesLoading(false);
+    }
+    if (id.startsWith("g-")) {
+      try {
+        const res = await api.getGroupFullMembers(id);
+        setConversations((all) => all.map((item) => item.id === id ? { ...item, members: res.members } : item));
+      } catch { /* ignore */ }
     }
   };
   const send = async (body: string, attachment?: AttachmentMeta, quote?: ChatMessage["quote"]) => {
@@ -4714,7 +4848,15 @@ export default function App() {
     );
 
   return (
+    <RootErrorBoundary>
     <div className="app-shell" data-theme={appearance.theme}>
+      {globalError && (
+        <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 99999, padding: 20, overflow: "auto", fontFamily: "monospace" }}>
+          <h2 style={{ color: "red" }}>应用崩溃</h2>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: 12 }}>{globalError}</pre>
+          <button onClick={() => { setGlobalError(null); location.reload(); }} style={{ marginTop: 12, padding: "8px 16px" }}>重新加载</button>
+        </div>
+      )}
       {pinLocked && (
         <div className="pin-lock-screen">
           <div className="splash-icon"><img src="/app-icon.png" alt="蓝喵速递" /></div>
@@ -4764,6 +4906,10 @@ export default function App() {
                 }}
                 onLeave={() => setGroupAction("leave")}
                 onDissolve={() => setGroupAction("dissolve")}
+                onClearHistory={() => {
+                  void removeHistory(active.id);
+                  setMessages((all) => ({ ...all, [active.id]: [] }));
+                }}
               />
             ) : settingsPage === "contact" && editContact ? (
               <ContactSettingsPage
@@ -4787,6 +4933,10 @@ export default function App() {
                   setEditContact((current) => current ? { ...current, ...next } : current);
                 }}
                 onRemove={() => setRemoveContactId(editContact.id)}
+                onClearHistory={() => {
+                  void removeHistory(`d-${editContact.id}`);
+                  setMessages((all) => ({ ...all, [`d-${editContact.id}`]: [] }));
+                }}
               />
             ) : (
             <ChatScreen
@@ -4849,7 +4999,10 @@ export default function App() {
                 : contacts.find((item) => item.id === active.members?.[0]?.id)
                     ?.remark || active.name
             }
-            callLog={callLog}
+            onClearHistory={() => {
+              void removeHistory(active.id);
+              setMessages((all) => ({ ...all, [active.id]: [] }));
+            }}
           />
             )}
             </SlideTransition>
@@ -4894,6 +5047,7 @@ export default function App() {
                 conversations={conversations}
                 open={(id) => void openConversation(id)}
                 onGroup={() => setSheet("new-group")}
+                onJoinGroup={() => setSheet("join-group")}
               />
             )}
             {tab === "contacts" && (
@@ -4977,27 +5131,29 @@ export default function App() {
           <div className="call-card">
             <Avatar name={contacts.find((item) => item.id === callState.peerId)?.name ?? active?.members.find((item) => item.id === callState.peerId)?.name ?? `#${callState.peerId}`} image={contacts.find((item) => item.id === callState.peerId)?.avatar ?? active?.members.find((item) => item.id === callState.peerId)?.avatar} size="large" />
             <strong>{contacts.find((item) => item.id === callState.peerId)?.name ?? active?.members.find((item) => item.id === callState.peerId)?.name ?? `#${callState.peerId}`}</strong>
-             <small>{callState.status === "ringing" ? "来电..." : callState.status === "outgoing" ? "呼叫中..." : `通话中 ${Math.floor(callElapsed / 60).toString().padStart(2, "0")}:${(callElapsed % 60).toString().padStart(2, "0")}`}</small>
+            <small>{callState.status === "ringing" ? "来电..." : callState.status === "outgoing" ? "呼叫中..." : `通话中 ${Math.floor(callElapsed / 60).toString().padStart(2, "0")}:${(callElapsed % 60).toString().padStart(2, "0")}`}</small>
             {callState.status === "active" && callManagerRef.current?.remote && (
               <audio ref={(node) => { if (node && callManagerRef.current?.remote) { node.srcObject = callManagerRef.current.remote; node.play().catch(() => {}); } }} autoPlay />
             )}
             <div className="call-actions">
               {(callState.status === "ringing") && (
-                 <button className="call-button accept" onClick={async () => { const offer = pendingOfferRef.current; setIncomingCaller(null); if (offer) { const manager = callManagerRef.current ?? new VoiceCallManager(); callManagerRef.current = manager; manager.setHandler({ sendSignal: (id, signal) => socket.sendSignal(id, signal), onStateChange: setCallState }); void manager.handleSignal(offer.from, offer.signal as { kind?: string; callId?: string }); pendingOfferRef.current = null; } }}><Phone /></button>
-               )}
-               <button className="call-button hangup" onClick={() => { if (callState.status === "ringing") callManagerRef.current?.reject(); else callManagerRef.current?.hangup(); setIncomingCaller(null); pendingOfferRef.current = null; }}><PhoneOff /></button>
+                <button className="call-button" style={{ background: "#22c55e" }} onClick={async () => { const offer = pendingOfferRef.current; setIncomingCaller(null); if (offer) { const manager = callManagerRef.current ?? new VoiceCallManager(); callManagerRef.current = manager; manager.setHandler({ sendSignal: (id, signal) => socket.sendSignal(id, signal), onStateChange: setCallState }); void manager.handleSignal(offer.from, offer.signal as { kind?: string; callId?: string }); pendingOfferRef.current = null; } }}>
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </button>
+              )}
+              <button className="call-button" style={{ background: "#ef4444" }} onClick={() => { if (callState.status === "ringing") callManagerRef.current?.reject(); else callManagerRef.current?.hangup(); setIncomingCaller(null); pendingOfferRef.current = null; }}>
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
             </div>
           </div>
         </div>
       )}
       {(callState.status === "error" || callState.status === "ended") && (
-        <div className="call-overlay" onClick={() => setCallState({ status: "idle" })}>
+        <div className="call-overlay ended" onClick={() => setCallState({ status: "idle" })}>
           <div className="call-card">
-            <strong style={{ color: "var(--coral-dark)" }}>{callState.status === "ended" ? callState.message : "通话失败"}</strong>
+            <Avatar name={contacts.find((item) => item.id === callState.peerId)?.name ?? active?.members.find((item) => item.id === callState.peerId)?.name ?? `#${callState.peerId}`} image={contacts.find((item) => item.id === callState.peerId)?.avatar ?? active?.members.find((item) => item.id === callState.peerId)?.avatar} size="large" />
+            <strong>{callState.status === "ended" ? callState.message : "通话失败"}</strong>
             <small>{callState.message}</small>
-            <div className="call-actions">
-              <button className="call-button hangup" onClick={() => setCallState({ status: "idle" })}><PhoneOff /></button>
-            </div>
           </div>
         </div>
       )}
@@ -5225,5 +5381,6 @@ export default function App() {
         />
       )}
     </div>
+    </RootErrorBoundary>
   );
 }

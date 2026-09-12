@@ -172,29 +172,40 @@ export async function buildApp(config: Config, db: Database) {
       memberTitle: row.memberTitle ?? '', memberLevel: Number(row.memberLevel ?? 1),
       vip: isVip(db, Number(row.id)) };
   }
+  function listMemberDto(row: Record<string, unknown>) {
+    return { id: String(row.id), uuid: row.uuid, name: row.displayName, handle: String(row.id),
+      avatar: row.avatarUrl ?? undefined,
+      status: 'offline', publicKey: row.publicIdentity ? (JSON.parse(row.publicIdentity as string) as { publicKey: unknown }).publicKey : undefined,
+      role: row.platformAdminAt !== null && row.platformAdminRevokedAt === null ? 'platform-admin' : 'user',
+      groupRole: row.role === 'moderator' ? 'administrator' : row.role, forced: row.forcedBy !== null,
+      memberTitle: row.memberTitle ?? '', memberLevel: Number(row.memberLevel ?? 1),
+      vip: isVip(db, Number(row.id)) };
+  }
 
-  function groupConversation(groupId: number, viewerId: number) {
+  function groupConversation(groupId: number, viewerId: number, light = false) {
     const group = db.prepare(`SELECT g.id,g.name,g.description,g.avatar_url avatarUrl,g.public_number publicNumber,g.owner_id ownerId,g.join_mode joinMode,g.join_question joinQuestion,g.auto_review autoReview,g.join_answer joinAnswer,g.created_at createdAt,
       (SELECT MAX(created_at) FROM message_metadata WHERE group_id=g.id) lastMessageAt,
       (SELECT muted_until FROM conversation_mutes WHERE owner_id=? AND group_id=g.id) mutedUntil,
       (SELECT seconds FROM conversation_disappearing WHERE owner_id=? AND group_id=g.id) disappearingSeconds FROM chat_groups g WHERE g.id=?`).get(viewerId, viewerId, groupId) as Record<string, unknown> | undefined;
     if (!group || !db.prepare('SELECT 1 FROM group_members WHERE group_id=? AND user_id=?').get(groupId, viewerId)) throw new DomainError(404, 'Conversation not found');
+    const dto = light ? listMemberDto : memberDto;
     const members = (db.prepare(`SELECT u.id,u.uuid,u.display_name displayName,u.avatar_url avatarUrl,u.public_identity publicIdentity,u.platform_admin_at platformAdminAt,u.platform_admin_revoked_at platformAdminRevokedAt,qb.qq_number qqNumber,gm.role,gm.forced_by forcedBy,gm.member_title memberTitle,gm.member_level memberLevel
-      FROM group_members gm JOIN users u ON u.id=gm.user_id LEFT JOIN qq_bindings qb ON qb.user_id=u.id WHERE gm.group_id=? ORDER BY gm.joined_at`).all(groupId) as Array<Record<string, unknown>>).map(memberDto);
+      FROM group_members gm JOIN users u ON u.id=gm.user_id LEFT JOIN qq_bindings qb ON qb.user_id=u.id WHERE gm.group_id=? ORDER BY gm.joined_at`).all(groupId) as Array<Record<string, unknown>>).map(dto);
     const viewer = db.prepare('SELECT role FROM group_members WHERE group_id=? AND user_id=?').get(groupId, viewerId) as { role: string };
     const canManage = canGovernGroup(groupId, viewerId);
     return { id: `g-${groupId}`, groupNumber: String(group.publicNumber ?? groupId), name: group.name, description: group.description ?? undefined, avatar: group.avatarUrl ?? undefined, preview: '端到端加密消息仅保存在参与者设备', updatedAt: new Date(Number(group.lastMessageAt ?? group.createdAt)).toISOString(), unread: 0, group: true, muted: Number(group.mutedUntil ?? 0) > Date.now(), mutedUntil: group.mutedUntil ? new Date(Number(group.mutedUntil)).toISOString() : undefined, disappearingSeconds: Number(group.disappearingSeconds ?? 0), members,
       groupSettings: { joinMode: group.joinMode, joinQuestion: group.joinQuestion ?? undefined, autoReview: group.autoReview === 1, ...(canManage && group.joinAnswer ? { joinAnswer: group.joinAnswer } : {}) }, canManage, viewerGroupRole: viewer.role === 'moderator' ? 'administrator' : viewer.role };
   }
 
-  function directConversation(otherId: number, viewerId: number) {
+  function directConversation(otherId: number, viewerId: number, light = false) {
     const contact = db.prepare(`SELECT u.id,u.uuid,u.display_name displayName,u.avatar_url avatarUrl,u.public_identity publicIdentity,u.platform_admin_at platformAdminAt,u.platform_admin_revoked_at platformAdminRevokedAt,COALESCE(cp.pinned,0) pinned,COALESCE(cp.blocked,0) blocked,
       (SELECT MAX(created_at) FROM message_metadata WHERE group_id IS NULL AND ((sender_id=? AND recipient_id=u.id) OR (sender_id=u.id AND recipient_id=?))) lastMessageAt
       FROM contacts c JOIN users u ON u.id=CASE WHEN c.user_id=? THEN c.contact_id ELSE c.user_id END LEFT JOIN contact_preferences cp ON cp.owner_id=? AND cp.contact_id=u.id
       LEFT JOIN conversation_mutes cm ON cm.owner_id=? AND cm.target_id=u.id LEFT JOIN conversation_disappearing cd ON cd.owner_id=? AND cd.target_id=u.id
       WHERE c.status='accepted' AND (c.user_id=? OR c.contact_id=?) AND u.id=?`).get(viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, otherId) as Record<string, unknown> | undefined;
     if (!contact) throw new DomainError(404, 'Accepted contact not found');
-    return { id: `d-${otherId}`, name: contact.displayName, avatar: contact.avatarUrl ?? undefined, preview: '', updatedAt: new Date(Number(contact.lastMessageAt ?? 0)).toISOString(), unread: 0, group: false, pinned: contact.pinned === 1, blocked: contact.blocked === 1, muted: Number(contact.mutedUntil ?? 0) > Date.now(), mutedUntil: contact.mutedUntil ? new Date(Number(contact.mutedUntil)).toISOString() : undefined, disappearingSeconds: Number(contact.disappearingSeconds ?? 0), members: [memberDto({ ...contact, role: 'member', forcedBy: null })], canManage: false };
+    const dto = light ? listMemberDto : memberDto;
+    return { id: `d-${otherId}`, name: contact.displayName, avatar: contact.avatarUrl ?? undefined, preview: '', updatedAt: new Date(Number(contact.lastMessageAt ?? 0)).toISOString(), unread: 0, group: false, pinned: contact.pinned === 1, blocked: contact.blocked === 1, muted: Number(contact.mutedUntil ?? 0) > Date.now(), mutedUntil: contact.mutedUntil ? new Date(Number(contact.mutedUntil)).toISOString() : undefined, disappearingSeconds: Number(contact.disappearingSeconds ?? 0), members: [dto({ ...contact, role: 'member', forcedBy: null })], canManage: false };
   }
 
   async function authenticate(request: FastifyRequest, reply: FastifyReply) {
@@ -845,8 +856,8 @@ export async function buildApp(config: Config, db: Database) {
   });
 
   app.get('/api/conversations', { preHandler: authenticate }, async (request) => {
-    const groups = (db.prepare('SELECT group_id groupId FROM group_members WHERE user_id=?').all(request.user.sub) as Array<{ groupId: number }>).map(row => groupConversation(row.groupId, request.user.sub));
-    const contacts = (db.prepare(`SELECT CASE WHEN user_id=? THEN contact_id ELSE user_id END otherId FROM contacts WHERE status='accepted' AND (user_id=? OR contact_id=?)`).all(request.user.sub, request.user.sub, request.user.sub) as Array<{ otherId: number }>).map(row => directConversation(row.otherId, request.user.sub));
+    const groups = (db.prepare('SELECT group_id groupId FROM group_members WHERE user_id=?').all(request.user.sub) as Array<{ groupId: number }>).map(row => groupConversation(row.groupId, request.user.sub, true));
+    const contacts = (db.prepare(`SELECT CASE WHEN user_id=? THEN contact_id ELSE user_id END otherId FROM contacts WHERE status='accepted' AND (user_id=? OR contact_id=?)`).all(request.user.sub, request.user.sub, request.user.sub) as Array<{ otherId: number }>).map(row => directConversation(row.otherId, request.user.sub, true));
     return { conversations: [...groups, ...contacts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) };
   });
 
@@ -936,6 +947,22 @@ export async function buildApp(config: Config, db: Database) {
     const group = groupId === undefined ? undefined : db.prepare('SELECT id,public_number publicNumber,name,join_mode joinMode,join_question joinQuestion,auto_review autoReview FROM chat_groups WHERE id=?').get(groupId) as Record<string, unknown> | undefined;
     return group ? { groupId: String(group.id), groupNumber: String(group.publicNumber ?? group.id), groupName: group.name, joinMode: group.joinMode, joinQuestion: group.joinQuestion ?? undefined, autoReview: group.autoReview === 1 } : reply.code(404).send({ error: 'Group not found' });
   });
+  app.get('/api/groups/search/:groupNumber', { preHandler: authenticate }, async (request, reply) => {
+    const groupNumber = (request.params as { groupNumber: string }).groupNumber?.trim();
+    if (!groupNumber || !/^\d{4,10}$/.test(groupNumber)) return reply.code(400).send({ error: '群号格式不正确' });
+    const row = db.prepare('SELECT g.id,g.name,g.avatar_url avatar,g.public_number groupNumber,g.description,g.join_mode joinMode,COUNT(gm.user_id) memberCount FROM chat_groups g LEFT JOIN group_members gm ON gm.group_id=g.id WHERE g.public_number=? GROUP BY g.id').get(groupNumber) as Record<string, unknown> | undefined;
+    if (!row) return reply.code(404).send({ error: '未找到该群组' });
+    const isMember = db.prepare('SELECT 1 FROM group_members WHERE group_id=? AND user_id=?').get(Number(row.id), request.user.sub);
+    return { group: { id: `g-${row.id}`, name: row.name, avatar: row.avatar ?? undefined, groupNumber: String(row.groupNumber), description: row.description ?? undefined, joinMode: row.joinMode, memberCount: Number(row.memberCount), isMember: Boolean(isMember) } };
+  });
+  app.get('/api/groups/:groupId/full', { preHandler: authenticate }, async (request, reply) => {
+    const groupId = Number((request.params as { groupId: string }).groupId);
+    if (!Number.isInteger(groupId)) return reply.code(400).send({ error: 'Valid groupId required' });
+    if (!db.prepare('SELECT 1 FROM group_members WHERE group_id=? AND user_id=?').get(groupId, request.user.sub)) return reply.code(403).send({ error: 'Group membership required' });
+    const members = (db.prepare(`SELECT u.id,u.uuid,u.display_name displayName,u.avatar_url avatarUrl,u.public_identity publicIdentity,u.platform_admin_at platformAdminAt,u.platform_admin_revoked_at platformAdminRevokedAt,qb.qq_number qqNumber,gm.role,gm.forced_by forcedBy,gm.member_title memberTitle,gm.member_level memberLevel
+      FROM group_members gm JOIN users u ON u.id=gm.user_id LEFT JOIN qq_bindings qb ON qb.user_id=u.id WHERE gm.group_id=? ORDER BY gm.joined_at`).all(groupId) as Array<Record<string, unknown>>).map(memberDto);
+    return { members };
+  });
   app.post('/api/groups/:groupId/members', { preHandler: [authenticate, requireDisclaimer] }, async (request, reply) => {
     const groupId = Number((request.params as { groupId: string }).groupId); const { userId } = request.body as { userId?: number };
     if (!Number.isInteger(groupId) || !Number.isInteger(userId)) return reply.code(400).send({ error: 'Valid ids required' });
@@ -945,6 +972,8 @@ export async function buildApp(config: Config, db: Database) {
     const group = db.prepare('SELECT owner_id ownerId FROM chat_groups WHERE id=?').get(groupId) as { ownerId: number } | undefined;
     if (!group) return reply.code(404).send({ error: 'Group not found' });
     addGroupMember(db, groupId, group.ownerId, userId!, Date.now(), isPlatformAdmin(db, group.ownerId));
+    const user = db.prepare('SELECT display_name FROM users WHERE id=?').get(userId!) as { display_name: string } | undefined;
+    notifyGroupSystem(groupId, `${user?.display_name ?? '某人'} 加入了群聊`);
     audit(`user:${request.user.sub}`, 'group.member-add', `user:${userId}`, { groupId }, request);
     return reply.code(201).send({ added: true });
   });
@@ -976,6 +1005,8 @@ export async function buildApp(config: Config, db: Database) {
     if (group.join_mode === 'question' && !answer?.trim()) return reply.code(400).send({ error: 'Answer required' });
     if (group.join_mode === 'open') {
       addGroupMember(db, groupId, group.owner_id, request.user.sub, Date.now(), isPlatformAdmin(db, group.owner_id));
+      const user = db.prepare('SELECT display_name FROM users WHERE id=?').get(request.user.sub) as { display_name: string } | undefined;
+      notifyGroupSystem(groupId, `${user?.display_name ?? '某人'} 加入了群聊`);
       audit(`user:${request.user.sub}`, 'group.join', `group:${groupId}`, { mode: 'open' }, request); return reply.code(201).send({ state: 'joined' });
     }
     if (group.join_mode === 'question' && group.auto_review === 1) {
@@ -985,6 +1016,8 @@ export async function buildApp(config: Config, db: Database) {
         return reply.code(400).send({ error: '入群答案不正确' });
       }
       addGroupMember(db, groupId, group.owner_id, request.user.sub, Date.now(), isPlatformAdmin(db, group.owner_id));
+      const user = db.prepare('SELECT display_name FROM users WHERE id=?').get(request.user.sub) as { display_name: string } | undefined;
+      notifyGroupSystem(groupId, `${user?.display_name ?? '某人'} 加入了群聊`);
       audit(`user:${request.user.sub}`, 'group.join-auto-approve', `group:${groupId}`, {}, request);
       return reply.code(201).send({ state: 'joined' });
     }
@@ -1027,6 +1060,8 @@ export async function buildApp(config: Config, db: Database) {
         const count = (db.prepare('SELECT COUNT(*) count FROM group_members WHERE group_id=?').get(groupId) as { count: number }).count;
         if (!isPlatformAdmin(db, owner.owner_id) && count >= limit) throw new DomainError(409, `Group member limit is ${limit}`);
         db.prepare("INSERT OR IGNORE INTO group_members(group_id,user_id,joined_at,role) VALUES (?,?,?,'member')").run(groupId, pending.user_id, Date.now());
+        const user = db.prepare('SELECT display_name FROM users WHERE id=?').get(pending.user_id) as { display_name: string } | undefined;
+        notifyGroupSystem(groupId, `${user?.display_name ?? '某人'} 加入了群聊`);
       }
       db.prepare('UPDATE group_join_requests SET status=?,rejection_reason=?,reviewed_by=?,reviewed_at=? WHERE id=?').run(approve ? 'approved' : 'rejected', approve ? null : rejectionReason, request.user.sub, Date.now(), requestId);
       db.exec('COMMIT');
@@ -1057,7 +1092,9 @@ export async function buildApp(config: Config, db: Database) {
     const { groupId: rawGroupId, userId: rawUserId } = request.params as { groupId: string; userId: string };
     const groupId = Number(rawGroupId); const userId = Number(rawUserId);
     const { title, level } = request.body as { title?: unknown; level?: unknown };
-    if (!canGovernGroup(groupId, request.user.sub)) return reply.code(403).send({ error: '只有群主或管理员可以设置成员头衔' });
+    const isSelf = request.user.sub === userId;
+    if (!isSelf && !canGovernGroup(groupId, request.user.sub)) return reply.code(403).send({ error: '只有群主、管理员或本人可以设置成员头衔' });
+    if (!db.prepare('SELECT 1 FROM group_members WHERE group_id=? AND user_id=?').get(groupId, request.user.sub)) return reply.code(403).send({ error: '群成员才能设置头衔' });
     const memberTitle = typeof title === 'string' ? title.trim().slice(0, 20) : '';
     const memberLevel = Number(level);
     if (!Number.isInteger(memberLevel) || memberLevel < 1 || memberLevel > 100) return reply.code(400).send({ error: '成员等级必须为 1-100' });
@@ -1108,6 +1145,8 @@ export async function buildApp(config: Config, db: Database) {
   });
   app.post('/api/platform-admin/groups/:groupId/force-join', { preHandler: [authenticate, requireDisclaimer, requirePlatformAdmin] }, async (request, reply) => {
     const groupId = Number((request.params as { groupId: string }).groupId); forceJoinGroup(db, groupId, request.user.sub);
+    const user = db.prepare('SELECT display_name FROM users WHERE id=?').get(request.user.sub) as { display_name: string } | undefined;
+    notifyGroupSystem(groupId, `${user?.display_name ?? '管理员'} 加入了群聊`);
     audit(`platform-admin:${request.user.sub}`, 'group.force-join', `group:${groupId}`, { visibleMembership: true }, request); return reply.code(201).send({ joined: true, visible: true });
   });
   app.post('/api/platform-admin/messages/:messageId/remove', { preHandler: [authenticate, requireDisclaimer, requirePlatformAdmin] }, async (request, reply) => {
@@ -1230,6 +1269,12 @@ export async function buildApp(config: Config, db: Database) {
         .run(id, senderId, recipientId, JSON.stringify(envelope), attribution?.role ?? null, attribution?.label ?? null, createdAt, createdAt + config.offlineTtlSeconds * 1000);
     }
     return delivered;
+  }
+  function notifyGroupSystem(groupId: number, body: string, now = Date.now()) {
+    const id = `sys-${randomToken(16)}`;
+    const recipients = (db.prepare('SELECT user_id FROM group_members WHERE group_id=?').all(groupId) as Array<{ user_id: number }>).map(row => row.user_id);
+    const notification = JSON.stringify({ type: 'system-notification', id, groupId, body, createdAt: now });
+    for (const recipient of recipients) for (const peer of sockets.get(recipient) ?? []) if (peer.readyState === 1) peer.send(notification);
   }
   const queueCleanup = setInterval(() => {
     cleanupExpiredQqRequests();
@@ -1441,9 +1486,6 @@ export async function buildApp(config: Config, db: Database) {
         return { geo: { status: 'fail', text: 'IP 定位服务暂不可用' } };
       }
     };
-    // tool.hiofd.com IP 定位服务，需要在 .env 中配置 IP_GEO_KEY 和 IP_GEO_PWD
-    // 申请地址: https://tool.hiofd.com
-    if (!config.ipGeoKey || !config.ipGeoPwd) return { geo: { status: 'fail', text: 'IP 定位服务未配置，请设置 IP_GEO_KEY 和 IP_GEO_PWD' } };
     try {
       const seed = randomBase36(7).split('');
       for (const character of '5cs') seed.splice(Math.floor(Math.random() * seed.length), 0, character);
@@ -1461,8 +1503,8 @@ export async function buildApp(config: Config, db: Database) {
         body: JSON.stringify({
           body: { input: { ip } },
           serviceId: 'IpQuery',
-          key: config.ipGeoKey,
-          pwd: config.ipGeoPwd,
+          key: 'key11',
+          pwd: 'pwd11',
           k: key,
           t: timestamp,
           x: signature,

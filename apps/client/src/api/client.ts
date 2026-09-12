@@ -380,6 +380,16 @@ export class ApiClient {
       { method: "POST", body: JSON.stringify({ answer }) },
     );
   }
+  searchGroupByNumber(groupNumber: string) {
+    return this.request<{ group: { id: string; name: string; avatar?: string; groupNumber: string; description?: string; joinMode: string; memberCount: number; isMember: boolean } }>(
+      `/groups/search/${encodeURIComponent(groupNumber)}`,
+    );
+  }
+  getGroupFullMembers(groupId: string) {
+    return this.request<{ members: Array<{ id: string; name: string; avatar?: string; qqNumber?: string; groupRole: string; memberTitle: string; memberLevel: number; vip: boolean; forced: boolean }> }>(
+      `/groups/${groupId.replace(/^g-/, "")}/full`,
+    );
+  }
   forceJoinGroup(groupId: string) {
     return this.request<{ joined: true; visible: true }>(
       `/platform-admin/groups/${groupId.replace(/^g-/, "")}/force-join`,
@@ -541,7 +551,8 @@ export type SocketEvent =
   | { type: "typing"; from: string; conversationId: string }
   | { type: "call-signal"; from: string; signal: unknown }
   | { type: "avatar-updated"; userId: string; avatar?: string }
-  | { type: "contact-request"; from: string };
+  | { type: "contact-request"; from: string }
+  | { type: "system-notification"; id: string; groupId: number; body: string; createdAt: number };
 
 export class MessagingSocket {
   private socket?: WebSocket;

@@ -1,4 +1,4 @@
-// 语音通话状态机：WebRTC 信令、ICE、通话状态流转、callId 去重
+// 语音通话：WebRTC 信令与状态管理
 export type CallResult = "completed" | "missed" | "rejected" | "cancelled" | "failed";
 
 export type CallState =
@@ -78,7 +78,7 @@ export class VoiceCallManager {
     if (this.callTimer) clearTimeout(this.callTimer);
     this.callTimer = undefined;
     if (!this.activeStartedAt) this.activeStartedAt = Date.now();
-    this.handler?.onStateChange({ status: "active", peerId: this.peerId, callId: this.callId, startedAt: this.activeStartedAt });
+    try { this.handler?.onStateChange({ status: "active", peerId: this.peerId, callId: this.callId, startedAt: this.activeStartedAt }); } catch { /* ignore */ }
   }
 
   async startOutgoing(peerId: string): Promise<boolean> {
@@ -92,13 +92,13 @@ export class VoiceCallManager {
       const offer = await this.peer.createOffer();
       await this.peer.setLocalDescription(offer);
       this.handler?.sendSignal(peerId, { kind: "offer", callId: this.callId, sdp: this.peer.localDescription });
-      this.handler?.onStateChange({ status: "outgoing", peerId, callId: this.callId, startedAt: Date.now() });
+      try { this.handler?.onStateChange({ status: "outgoing", peerId, callId: this.callId, startedAt: Date.now() }); } catch { /* ignore */ }
       this.callTimer = setTimeout(() => this.finish("missed", true), 30_000);
       return true;
     } catch (error) {
       this.dispose();
       const message = error instanceof DOMException && error.name === "NotAllowedError" ? "请允许麦克风权限" : "无法建立通话，请检查网络";
-      this.handler?.onStateChange({ status: "error", message });
+      try { this.handler?.onStateChange({ status: "error", message }); } catch { /* ignore */ }
       return false;
     }
   }
@@ -156,7 +156,7 @@ export class VoiceCallManager {
     if (notifyPeer) try { this.handler?.sendSignal(peerId, { kind: "hangup", callId, reason: result }); } catch { /* ignore */ }
     this.dispose();
     const message = result === "missed" ? "未接听" : result === "rejected" ? "通话已拒绝" : result === "cancelled" ? "通话已取消" : result === "failed" ? "通话失败" : "通话结束";
-    this.handler?.onStateChange({ status: "ended", peerId, callId, result, duration, message });
+    try { this.handler?.onStateChange({ status: "ended", peerId, callId, result, duration, message }); } catch { /* ignore */ }
   }
 
   private dispose() {
